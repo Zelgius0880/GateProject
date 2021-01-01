@@ -1,0 +1,28 @@
+<resources>
+    <string name="app_name">GateApp</string>
+    <string name="connected">Connected</string>
+    <string name="disconnected">Disconnected</string>
+    <string name="permission_needed_connect_wifi">The app need the requested permission to connect to the wifi</string>
+    <string name="cannot_connect">Cannot connect</string>
+    <string name="open">Open</string>
+    <string name="connect">Connect</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="gate_signal">Gate signal</string>
+    <string name="progression">Progression</string>
+    <string name="not_working">Not working</string>
+    <string name="opening">Opening</string>
+    <string name="closing">Closing</string>
+    <string name="step_opening">Step opening</string>
+    <string name="close">Close</string>
+    <string name="close_a_bit">Close a bit</string>
+    <string name="open_a_bit">Open a bit</string>
+    <string name="action">Action</string>
+    <string name="configuration">Configuration</string>
+    <string name="need_to_be_connected">Conection to gate\'s wifi required</string>
+    <string name="gate_not_closed">The gate need to be closed to start configuration</string>
+    <string name="it_is_closed">It is closed</string>
+    <string name="stop">Stop</string>
+    <string name="start">Start</string>
+    <string name="movement_time_format">Movement time: %d ms</string>
+    <string name="movement_time">Movement time</string>
+</resources>
