@@ -58,23 +58,38 @@ fun OpenButton(
     wifiViewModel: WifiViewModel?,
     modifier: Modifier = Modifier
 ) { // nullable for preview
-    val enabled =
-        wifiViewModel?.status != GateStatus.OPENED && wifiViewModel?.status != GateStatus.OPENING
-    Button(
-        onClick = {
-            wifiViewModel?.openGate()
-        },
-        enabled = wifiViewModel?.status != GateStatus.OPENED && wifiViewModel?.status != GateStatus.OPENING,
-        modifier = modifier,
-        colors = ButtonConstants.defaultButtonColors(MaterialTheme.colors.primaryVariant)
-    ) {
 
-        Text(
-            text = stringResource(id = R.string.open).toUpperCase(Locale.ROOT),
-            color = MaterialTheme.colors.onPrimary
-        )
+    if (wifiViewModel?.status != GateStatus.OPENING)
+        Button(
+            onClick = {
+                wifiViewModel?.openGate()
+            },
+            enabled = wifiViewModel?.status != GateStatus.OPENED,
+            modifier = modifier,
+            colors = ButtonConstants.defaultButtonColors(MaterialTheme.colors.primaryVariant)
+        ) {
 
-    }
+            Text(
+                text = stringResource(id = R.string.open).toUpperCase(Locale.ROOT),
+                color = MaterialTheme.colors.onPrimary
+            )
+
+        }
+    else
+        TextButton(
+            onClick = {
+                wifiViewModel.stop()
+            },
+            modifier = modifier,
+        ) {
+
+            Text(
+                text = stringResource(id = R.string.stop).toUpperCase(Locale.ROOT),
+                color = MaterialTheme.colors.primary
+            )
+
+        }
+
 }
 
 @Composable
@@ -82,22 +97,34 @@ fun CloseButton(
     wifiViewModel: WifiViewModel?,
     modifier: Modifier = Modifier
 ) { // nullable for preview
-    val enabled =
-        wifiViewModel?.status != GateStatus.CLOSING && wifiViewModel?.status != GateStatus.CLOSED
-    Button(
-        onClick = {
-            wifiViewModel?.closeGate()
-        },
-        enabled = enabled,
-        modifier = modifier,
-        colors = ButtonConstants.defaultButtonColors(MaterialTheme.colors.secondaryVariant)
-    ) {
+    if (wifiViewModel?.status != GateStatus.CLOSING)
+        Button(
+            onClick = {
+                wifiViewModel?.closeGate()
+            },
+            enabled = wifiViewModel?.status != GateStatus.CLOSED,
+            modifier = modifier,
+            colors = ButtonConstants.defaultButtonColors(MaterialTheme.colors.secondaryVariant)
+        ) {
 
-        Text(
-            text = stringResource(id = R.string.close).toUpperCase(Locale.ROOT),
-            color = MaterialTheme.colors.onSecondary
-        )
-    }
+            Text(
+                text = stringResource(id = R.string.close).toUpperCase(Locale.ROOT),
+                color = MaterialTheme.colors.onSecondary
+            )
+        }
+    else
+        TextButton(
+            onClick = {
+                wifiViewModel.stop()
+            },
+            modifier = modifier
+        ) {
+
+            Text(
+                text = stringResource(id = R.string.stop).toUpperCase(Locale.ROOT),
+                color = MaterialTheme.colors.secondary
+            )
+        }
 }
 
 @Composable
@@ -193,7 +220,7 @@ fun StartConfiguration(viewModel: WifiViewModel?) {
                     viewModel.stopConfig()
             }) {
                 Text(
-                    text = stringResource(id = if (viewModel.config) R.string.start else R.string.stop).toUpperCase(
+                    text = stringResource(id = if (!viewModel.config) R.string.start else R.string.stop).toUpperCase(
                         Locale.ROOT
                     )
                 )

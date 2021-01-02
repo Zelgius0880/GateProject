@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">GateApp</string>
+    <string name="app_name">Gate Project</string>
     <string name="connected">Connected</string>
     <string name="disconnected">Disconnected</string>
     <string name="permission_needed_connect_wifi">The app need the requested permission to connect to the wifi</string>
@@ -25,4 +25,9 @@
     <string name="start">Start</string>
     <string name="movement_time_format">Movement time: %d ms</string>
     <string name="movement_time">Movement time</string>
+    <string name="opened">Opened</string>
+    <string name="closed">Closed</string>
+    <string name="gate_project">Gate Project</string>
+    <string name="notification_channel">"Progression "</string>
+    <string name="channel_description">Show the rogression of the gate</string>
 </resources>

@@ -1,10 +1,7 @@
 package com.zelgius.gateApp.compose.buttons
 
 import androidx.annotation.IntRange
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -14,13 +11,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.zelgius.gateApp.GateStatus
 import com.zelgius.gateApp.R
 
 @Composable
 fun CardStatus(
     @IntRange(from = -1, to = 4) signalStrength: Int,
     @IntRange(from = 0, to = 100) progress: Int,
-    action: GateWork,
+    action: GateStatus,
     modifier: Modifier = Modifier
 ) {
     Card(modifier = Modifier.padding(8.dp) then modifier) {
@@ -31,7 +29,7 @@ fun CardStatus(
                 }
                 Icon(
                     imageVector = vectorResource(
-                        when (signalStrength) {
+                        when (signalStrength.coerceAtMost(4)) {
                             -1 -> R.drawable.twotone_signal_wifi_off_24
                             0 -> R.drawable.twotone_signal_wifi_0_bar_24
                             1 -> R.drawable.twotone_signal_wifi_1_bar_24
@@ -51,20 +49,22 @@ fun CardStatus(
                     stringResource(
                         id =
                         when (action) {
-                            GateWork.DOING_NOTHING -> R.string.not_working
-                            GateWork.OPENING -> R.string.opening
-                            GateWork.CLOSING -> R.string.closing
+                            GateStatus.NOT_WORKING -> R.string.not_working
+                            GateStatus.OPENED-> R.string.opened
+                            GateStatus.OPENING -> R.string.opening
+                            GateStatus.CLOSING -> R.string.closing
+                            GateStatus.CLOSED -> R.string.closed
                         }
                     )
                 }...", modifier = Modifier.padding(top = 16.dp)
             )
             LinearProgressIndicator(
-                progress = if (action == GateWork.DOING_NOTHING) 0f else progress / 100f,
-                modifier = Modifier.padding(top = 8.dp),
+                progress = if (action == GateStatus.NOT_WORKING) 0f else progress / 100f,
+                modifier = Modifier.padding(top = 8.dp) then Modifier.fillMaxWidth(),
                 color = when (action) {
-                    GateWork.DOING_NOTHING -> MaterialTheme.colors.primary
-                    GateWork.OPENING -> MaterialTheme.colors.primary
-                    GateWork.CLOSING -> MaterialTheme.colors.secondary
+                    GateStatus.NOT_WORKING -> MaterialTheme.colors.primary
+                    GateStatus.OPENING, GateStatus.OPENED -> MaterialTheme.colors.primary
+                    GateStatus.CLOSING, GateStatus.CLOSED -> MaterialTheme.colors.secondary
                 }
             )
         }
@@ -74,9 +74,5 @@ fun CardStatus(
 @Preview
 @Composable
 fun CardStatusPreview() {
-    CardStatus(3, 50, GateWork.OPENING)
-}
-
-enum class GateWork {
-    OPENING, CLOSING, DOING_NOTHING
+    CardStatus(3, 50, GateStatus.OPENING)
 }

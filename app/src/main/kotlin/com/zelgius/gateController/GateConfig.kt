@@ -19,7 +19,7 @@ class GateConfig(private val repository: GateRepository, val send: (Long) -> Boo
 
             repository.setProgress(0)
             repository.setCurrentStatus(GateStatus.OPENED)
-            repository.setStatus(GateStatus.NOT_WORKING)
+            repository.setStatus(GateStatus.OPENED)
             repository.setTime(time)
         }
     }

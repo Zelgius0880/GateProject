@@ -49,7 +49,15 @@ class WifiViewModel(val app: Application) : AndroidViewModel(app) {
     var status by mutableStateOf(GateStatus.NOT_WORKING)
         private set
 
-    private val gateRepository = GateRepository()
+    var signal by mutableStateOf(-1)
+        private set
+
+    private var _gateRepository: GateRepository? = null 
+    private val gateRepository : GateRepository
+    get() {
+        if(_gateRepository == null) _gateRepository = GateRepository()
+        return _gateRepository!!
+    }
 
     init {
         viewModelScope.launch {
@@ -64,6 +72,10 @@ class WifiViewModel(val app: Application) : AndroidViewModel(app) {
             gateRepository.listenTime {
                 time = it
             }
+
+            gateRepository.listenSignal {
+                signal = it
+            }
         }
     }
 
@@ -72,8 +84,8 @@ class WifiViewModel(val app: Application) : AndroidViewModel(app) {
         override fun onAvailable(network: Network) {
             //take action when network connection is gained
             if (isWifiConnected("\"$ssid\"")) {
-
                 viewModelScope.launch {
+                    gateRepository.goOffline()
                     repository.start()
                     connected = repository.isConnected
                     repository.send("[0;1]")
@@ -83,14 +95,16 @@ class WifiViewModel(val app: Application) : AndroidViewModel(app) {
         }
 
         override fun onLost(network: Network) {
-            if (isWifiConnected("\"$ssid\""))
+            if (isWifiConnected("\"$ssid\"")) {
                 disconnect()
+            }
 
         }
 
         override fun onUnavailable() {
-            if (connected == true)
+            if (connected == true) {
                 disconnect()
+            }
         }
 
     }
@@ -98,6 +112,10 @@ class WifiViewModel(val app: Application) : AndroidViewModel(app) {
     fun disconnect() {
         connected = false
         repository.stop()
+
+        viewModelScope.launch {
+            gateRepository.goOnline()
+        }
     }
 
     init {
@@ -113,11 +131,35 @@ class WifiViewModel(val app: Application) : AndroidViewModel(app) {
             connectivityManager?.bindProcessToNetwork(network)
 
             viewModelScope.launch {
+                gateRepository.goOffline()
                 repository.start()
                 connected = repository.isConnected
             }
             working = false
             //connectivityManager?.registerDefaultNetworkCallback(defaultNetworkCallback)
+        }
+
+        override fun onLost(network: Network) {
+            if (isWifiConnected("\"$ssid\"")) {
+                disconnect()
+                try {
+                    connectivityManager?.unregisterNetworkCallback(this)
+                    connectivityManager?.registerDefaultNetworkCallback(defaultNetworkCallback)
+                } catch (e: Exception) {
+                }
+            }
+
+        }
+
+        override fun onUnavailable() {
+            if (connected == true) {
+                disconnect()
+                try {
+                    connectivityManager?.unregisterNetworkCallback(this)
+                    connectivityManager?.registerDefaultNetworkCallback(defaultNetworkCallback)
+                } catch (e: Exception) {
+                }
+            }
         }
     }
 
@@ -256,6 +298,12 @@ class WifiViewModel(val app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             gateRepository.setStatus(GateStatus.CLOSED)
             gateRepository.setCurrentStatus(GateStatus.CLOSED)
+        }
+    }
+
+    fun stop() {
+        viewModelScope.launch {
+            gateRepository.setStatus(GateStatus.NOT_WORKING)
         }
     }
 }

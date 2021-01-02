@@ -62,16 +62,10 @@ fun MainScreen(
             bodyContent = {
                 ScrollableColumn {
                     CardStatus(
-                        signalStrength = 3,
+                        signalStrength = wifiViewModel.signal,
                         progress = wifiViewModel.progress,
-                        action = when (wifiViewModel.status) {
-                            GateStatus.OPENING -> GateWork.OPENING
-                            GateStatus.CLOSING -> GateWork.CLOSING
-                            GateStatus.NOT_WORKING -> GateWork.DOING_NOTHING
-                            GateStatus.OPENED -> GateWork.DOING_NOTHING
-                            GateStatus.CLOSED -> GateWork.DOING_NOTHING
-                        }
-                    , Modifier.fillMaxWidth())
+                        action = wifiViewModel.status, Modifier.fillMaxWidth()
+                    )
 
                     CardOpenClose(viewModel = wifiViewModel, Modifier.fillMaxWidth())
                     CardTime(viewModel = wifiViewModel, Modifier.fillMaxWidth())

@@ -10,7 +10,7 @@ import com.zelgius.gateApp.R
 @Composable
 fun AppTopBar(connected: Boolean, onClick: () -> Unit) {
     TopAppBar(
-        title = { Text("TopAppBar") },
+        title = { Text(stringResource(id = R.string.gate_project)) },
         backgroundColor = MaterialTheme.colors.primary,
         actions = {
             ConnectButton(connected = connected, onClick = onClick)
@@ -23,16 +23,16 @@ fun ConnectButton(
     onClick: () -> Unit
 ) {
     TextButton(onClick = onClick, enabled = !connected) {
-        Icon(
-            imageVector = vectorResource(
-                id = if (!connected) {
-                    R.drawable.ic_twotone_close_24
-                } else {
-                    R.drawable.ic_twotone_check_24
-                }
-            ), tint = MaterialTheme.colors.onPrimary
+        if (connected)
+            Icon(
+                imageVector = vectorResource(
+                    id = R.drawable.ic_twotone_check_24
+                ), tint = MaterialTheme.colors.onPrimary
+            )
+        Text(
+            text = stringResource(if (!connected) R.string.connect else R.string.connected),
+            color = MaterialTheme.colors.onPrimary
         )
-        Text(text = stringResource(if (!connected) R.string.connect else R.string.connected), color = MaterialTheme.colors.onPrimary)
     }
 }
 

@@ -13,7 +13,7 @@ import kotlin.coroutines.suspendCoroutine
 open class FirebaseRepository(val anonymousAuth: Boolean = true) {
     protected val db = FirebaseFirestore.getInstance().apply {
         firestoreSettings = FirebaseFirestoreSettings.Builder()
-            .setPersistenceEnabled(true)
+            //.setPersistenceEnabled(true)
             .build()
     }
     private val auth = FirebaseAuth.getInstance()

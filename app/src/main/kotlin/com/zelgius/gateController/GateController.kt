@@ -19,6 +19,8 @@ class GateController {
 
     var currentState = GateStatus.NOT_WORKING
 
+    var initComplete = false
+
     fun run() {
         val config = SerialConfig()
         config
@@ -32,50 +34,13 @@ class GateController {
         serial.open(config)
         println("=== UART Ready $serialPort ===")
 
-        repository.listenStatus {
-            println("Status has changed: $it")
-            if (currentState != it) {
-                currentState = it
-                when (it) {
-                    GateStatus.NOT_WORKING -> {
-                        stopWorks()
-                    }
-                    GateStatus.OPENING -> {
-                        work = GateWork(repository) { time ->
-                            if (gateId >= 0) {
-                                send(gateId, "[2;0;$time]\r\n", serial)
-                                true
-                            } else {
-                                stopWorks()
-                                false
-                            }
-                        }.apply { start() }
-                    }
-
-                    GateStatus.CLOSING -> {
-                        work = GateWork(repository) { time ->
-                            if (gateId >= 0) {
-                                send(gateId, "[2;1;$time]\r\n", serial)
-                                true
-                            } else {
-                                stopWorks()
-                                false
-                            }
-                        }.apply { start() }
-                    }
-
-                    else -> {
-                    }
-                }
-            }
-        }
-
-
         reader = SerialReader(channel, serial)
         reader.start()
         serial.write("AT+RST\r\n")
+
         runBlocking {
             repository.setStatus(repository.getCurrentStatus())
+            repository.setSignal(-1)
 
             while (true) {
                 val line = channel.receive()
@@ -101,9 +66,54 @@ class GateController {
         }
     }
 
+    private fun startListening(serial: Serial) {
+        initComplete = true
+        repository.listenStatus {
+            println("Status has changed: $it")
+            if (currentState != it) {
+                currentState = it
+                when (it) {
+                    GateStatus.NOT_WORKING -> {
+                        stopWorks()
+                    }
+                    GateStatus.OPENING -> {
+                        stopWorks()
+                        work = GateWork(repository) { time ->
+                            if (gateId >= 0) {
+                                send(gateId, "[2;0;$time]\r\n", serial)
+                                true
+                            } else {
+                                stopWorks()
+                                false
+                            }
+                        }.apply { start() }
+                    }
+
+                    GateStatus.CLOSING -> {
+                        stopWorks()
+                        work = GateWork(repository) { time ->
+                            if (gateId >= 0) {
+                                send(gateId, "[2;1;$time]\r\n", serial)
+                                true
+                            } else {
+                                stopWorks()
+                                false
+                            }
+                        }.apply { start() }
+                    }
+
+                    else -> {
+                    }
+                }
+            }
+        }
+    }
+
     private fun stopWorks() {
         work?.stop = true
+        work?.join()
         config?.stop = true
+        config?.join()
         config = null
         work = null
     }
@@ -113,8 +123,11 @@ class GateController {
 
         return when (packet.protocol) {
             0 -> {
-                if (packet.data.first() == "0") gateId = packet.linkId
-                else appId = packet.linkId
+                if (packet.data.first() == "0") {
+                    gateId = packet.linkId
+                    if (!initComplete)
+                        startListening(serial)
+                } else appId = packet.linkId
 
                 //send(packet.linkId, "[2;0;1000]\r\n", serial)
                 0
@@ -131,7 +144,7 @@ class GateController {
                 if (packet.data.first() == "0") {
                     config = GateConfig(repository) { time ->
                         if (gateId >= 0) {
-                            send(gateId, "[$gateId;1;$time]\r\n", serial)
+                            send(gateId, "[2;0;$time]\r\n", serial)
                             true
                         } else false
                     }.apply {

@@ -70,6 +70,7 @@ tasks {
 
 
 tasks.create("deploy") {
+    logging.captureStandardOutput(LogLevel.INFO)
     doLast {
         ssh.runSessions {
             session(raspberry) {
@@ -82,12 +83,12 @@ tasks.create("deploy") {
                     logger.error(e.message)
                 }
 
-                logger.warn("Deploying ...")
+                logger.lifecycle("Deploying ...")
                 put( file( getProps("firebase_admin_file")), "/home/pi/")
                 put(archive, "/home//pi/")
-                logger.warn(execute("sudo pkill -f ${archive.name}"))
-                logger.warn(execute("chmod +x ${archive.name}"))
-                logger.warn(execute("sudo java -jar ${archive.name}"))
+                logger.lifecycle(execute("sudo pkill -f ${archive.name}"))
+                logger.lifecycle(execute("chmod +x ${archive.name}"))
+                logger.lifecycle(execute("sudo java -jar ${archive.name}"))
             }
         }
     }

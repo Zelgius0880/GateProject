@@ -12,14 +12,36 @@ class GateWork(private val repository: GateRepository, val send: (Long) -> Boole
             val movingTime = repository.getTime()
             val current = repository.getCurrentStatus()
             var progress = repository.getProgress()
+            val status = repository.getStatus()
 
-
-            val isOpen = if(progress < 100) {
-                progress = 100 - progress
+            val isOpen: Boolean
+             if(progress < 100) {
+                progress = when {
+                    current == GateStatus.OPENING && status == GateStatus.CLOSING -> {
+                        isOpen = false
+                        100 - progress
+                    }
+                    current == GateStatus.OPENING && status == GateStatus.OPENING -> {
+                        isOpen = true
+                        progress
+                    }
+                    current == GateStatus.CLOSING && status == GateStatus.OPENING -> {
+                        isOpen = true
+                        100 - progress
+                    }
+                    current == GateStatus.CLOSING && status == GateStatus.CLOSING -> {
+                        isOpen = false
+                        progress
+                    }
+                    else -> {
+                        isOpen = !(current == GateStatus.OPENED || current == GateStatus.OPENING)
+                        progress
+                    }
+                }
                 (current == GateStatus.OPENED || current == GateStatus.OPENING)
             } else {
                 progress = 0
-                !(current == GateStatus.OPENED || current == GateStatus.OPENING).also {
+                isOpen = !(current == GateStatus.OPENED || current == GateStatus.OPENING).also {
                     if(it) {
                         repository.setCurrentStatus(GateStatus.CLOSING)
                     } else {
@@ -51,9 +73,12 @@ class GateWork(private val repository: GateRepository, val send: (Long) -> Boole
             if(time > movingTime) {
                 send(time - movingTime)
             }
-            repository.setProgress(100)
-            repository.setStatus(if(isOpen) GateStatus.OPENED else GateStatus.CLOSED)
-            repository.setCurrentStatus(if(isOpen) GateStatus.OPENED else GateStatus.CLOSED)
+
+            if(time >= movingTime ||progress >= 100) {
+                repository.setProgress(100)
+                repository.setStatus(if (isOpen) GateStatus.OPENED else GateStatus.CLOSED)
+                repository.setCurrentStatus(if (isOpen) GateStatus.OPENED else GateStatus.CLOSED)
+            }
         }
 
     }
