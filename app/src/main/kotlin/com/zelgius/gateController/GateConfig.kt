@@ -3,7 +3,11 @@ package com.zelgius.gateController
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 
-class GateConfig(private val repository: GateRepository, val send: (Long) -> Boolean) : Thread(){
+class GateConfig(
+    private val side: GateSide,
+    private val repository: GateRepository,
+    val send: (Long) -> Boolean
+) : Thread() {
 
     var stop = false
     override fun run() {
@@ -17,10 +21,10 @@ class GateConfig(private val repository: GateRepository, val send: (Long) -> Boo
             }
 
 
-            repository.setProgress(0)
-            repository.setCurrentStatus(GateStatus.OPENED)
-            repository.setStatus(GateStatus.OPENED)
-            repository.setTime(time)
+            repository.setProgress(side, 0)
+            repository.setCurrentStatus(side, GateStatus.OPENED)
+            repository.setStatus(side, GateStatus.OPENED)
+            repository.setTime(side, time)
         }
     }
 

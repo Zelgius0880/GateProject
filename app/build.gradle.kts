@@ -33,7 +33,7 @@ version = "1.0-SNAPSHOT"
 
 
 var raspberry = remotes.create("raspberry") {
-    host = "192.168.1.31"
+    host = "192.168.1.23"
     user = "pi"
     password = getProps("password")
 }

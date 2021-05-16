@@ -242,7 +242,7 @@ class WifiViewModel(val app: Application) : AndroidViewModel(app) {
         connectivityManager?.unregisterNetworkCallback(networkCallback)
     }
 
-    fun stepOpenGate(delay: Long = 1000L) {
+    fun stepOpenGate(delay: Long = 5000L) {
         working = true
         viewModelScope.launch {
             repository.send("[2;0;$delay]")
@@ -250,7 +250,7 @@ class WifiViewModel(val app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun stepCloseGate(delay: Long = 1000L) {
+    fun stepCloseGate(delay: Long = 5000L) {
         working = true
         viewModelScope.launch {
             repository.send("[2;1;$delay]")

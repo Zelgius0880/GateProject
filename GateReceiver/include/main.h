@@ -18,6 +18,9 @@ void send(char* data, uint16_t size);
 void dataReceived(char* s, uint16_t size);
 int extractSignal(char* s, uint16_t size);
 
-void open(uint32_t sleep);
-void close(uint32_t sleep);
+void open1(uint32_t sleep);
+void close1(uint32_t sleep);
+
+void open2(uint32_t sleep);
+void close2(uint32_t sleep);
 #endif //UNTITLED_MAIN_H

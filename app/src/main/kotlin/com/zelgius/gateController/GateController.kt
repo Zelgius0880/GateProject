@@ -1,86 +1,60 @@
 package com.zelgius.gateController
 
-import com.pi4j.io.serial.*
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 
 class GateController {
 
-    var gateId: Int = -1
-    var appId: Int = -1
+    private val repository = GateRepository()
+    private var gate: Gate? = null
+    private var config: GateConfig? = null
 
-    val channel = Channel<String>(Channel.UNLIMITED)
-    lateinit var reader: SerialReader
+    private var currentStateLeft = GateStatus.NOT_WORKING
+    private var currentStateRight = GateStatus.NOT_WORKING
 
-    val repository = GateRepository()
-    var work: GateWork? = null
-    var config: GateConfig? = null
+    private var initComplete = false
 
-    var currentState = GateStatus.NOT_WORKING
-
-    var initComplete = false
+    private val networkService: NetworkService = ESP8266NetworkService(
+        onConnectionClosed = {
+            repository.setSignal(-1)
+        }
+    )
 
     fun run() {
-        val config = SerialConfig()
-        config
-            .device(serialPort)
-            .baud(Baud._115200)
-            .dataBits(DataBits._8)
-            .parity(Parity.NONE)
-            .stopBits(StopBits._1)
-            .flowControl(FlowControl.NONE)
-        val serial = SerialFactory.createInstance()
-        serial.open(config)
-        println("=== UART Ready $serialPort ===")
-
-        reader = SerialReader(channel, serial)
-        reader.start()
-        serial.write("AT+RST\r\n")
-
         runBlocking {
-            repository.setStatus(repository.getCurrentStatus())
+            repository.setStatus(GateSide.Left, repository.getCurrentStatus(GateSide.Left))
+            repository.setStatus(GateSide.Right, repository.getCurrentStatus(GateSide.Right))
             repository.setSignal(-1)
 
-            while (true) {
-                val line = channel.receive()
-
-                when {
-                    line.startsWith("ready") -> {
-                        serial.write("AT+RST\r\n")
-                        setupESP8266(serial, channel)
-                    }
-                    line.startsWith("+IPD") -> delay(handleData(line, serial))
-                    line.contains(",CLOSED") -> {
-                        line.split(",").firstOrNull()?.toIntOrNull()?.let {
-                            if (it == appId) appId = -1
-                            else if (it == gateId) {
-                                repository.setSignal(-1)
-                                gateId = -1
-                            }
-                        }
-                    }
-                }
-
+            networkService.start {
+                handleData(it)
             }
         }
     }
 
-    private fun startListening(serial: Serial) {
+    private fun startListening() {
         initComplete = true
-        repository.listenStatus {
-            println("Status has changed: $it")
-            if (currentState != it) {
-                currentState = it
-                when (it) {
+        repository.listenStatus { side, status ->
+            println("Status has changed: $status")
+            if ((side == GateSide.Left && currentStateLeft != status) ||
+                (side == GateSide.Right && currentStateRight != status)
+            ) {
+
+                val id = if (side == GateSide.Left) {
+                    currentStateLeft = status
+                    0
+                } else {
+                    currentStateRight = status
+                    1
+                }
+
+                when (status) {
                     GateStatus.NOT_WORKING -> {
                         stopWorks()
                     }
                     GateStatus.OPENING -> {
                         stopWorks()
-                        work = GateWork(repository) { time ->
-                            if (gateId >= 0) {
-                                send(gateId, "[2;0;$time]\r\n", serial)
+                        gate = Gate(side, repository) { time ->
+                            if (networkService.sendToGate("[2;0;$time;$id]\r\n")) {
                                 true
                             } else {
                                 stopWorks()
@@ -91,9 +65,8 @@ class GateController {
 
                     GateStatus.CLOSING -> {
                         stopWorks()
-                        work = GateWork(repository) { time ->
-                            if (gateId >= 0) {
-                                send(gateId, "[2;1;$time]\r\n", serial)
+                        gate = Gate(side, repository) { time ->
+                            if (networkService.sendToGate("[2;1;$time;$id]\r\n")) {
                                 true
                             } else {
                                 stopWorks()
@@ -110,31 +83,29 @@ class GateController {
     }
 
     private fun stopWorks() {
-        work?.stop = true
-        work?.join()
+        gate?.stop = true
+        gate?.join()
         config?.stop = true
         config?.join()
         config = null
-        work = null
+        gate = null
     }
 
-    fun handleData(line: String, serial: Serial): Long {
-        val packet = line.toPacket()
+    private fun handleData(packet: Packet): Long {
 
         return when (packet.protocol) {
             0 -> {
                 if (packet.data.first() == "0") {
-                    gateId = packet.linkId
+                    networkService.gateId = packet.linkId
                     if (!initComplete)
-                        startListening(serial)
-                } else appId = packet.linkId
-
-                //send(packet.linkId, "[2;0;1000]\r\n", serial)
+                        startListening()
+                } else networkService.appId = packet.linkId
                 0
             }
 
             2 -> {
-                send(gateId, "[2;${packet.data[0]};${packet.data[1]}]\r\n", serial)
+                networkService.sendToGate("[2;${packet.data[0]};${packet.data[1]};0]\r\n")
+                networkService.sendToGate("[2;${packet.data[0]};${packet.data[1]};1]\r\n")
                 stopWorks()
                 packet.data[1].toLong()
             }
@@ -142,11 +113,9 @@ class GateController {
             3 -> {
                 stopWorks()
                 if (packet.data.first() == "0") {
-                    config = GateConfig(repository) { time ->
-                        if (gateId >= 0) {
-                            send(gateId, "[2;0;$time]\r\n", serial)
-                            true
-                        } else false
+                    val side = if(packet.data[1] == "0") GateSide.Left else GateSide.Right
+                    config = GateConfig(side, repository) { time ->
+                        networkService.sendToGate("[2;0;$time;0]\r\n")
                     }.apply {
                         start()
                     }
@@ -156,10 +125,9 @@ class GateController {
                 0
             }
 
-
             4 -> {
                 runBlocking {
-                    repository.setSignal(map(packet.data.first().toLong(), MIN_VAL, MAX_VAL, 0L, 5L).toInt())
+                    repository.setSignal(mapNetwork(packet.data.first().toLong()).toInt())
                 }
                 0
             }
@@ -168,63 +136,12 @@ class GateController {
 
     }
 
-    fun setupESP8266(serial: Serial, channel: Channel<String>) {
-        println("Setting up")
-        val cmds = listOf(
-            "AT+CWMODE=2",
-            "AT+CIPMUX=1",
-            "AT+CWSAP_CUR=\"U0c5vEPY2xzC3i0WnweR\",\"KGaPoM7bfVzfW5bSyoAaQ\",5,2,2,0",
-            "AT+CIPSERVER=1,1000",
-        )
 
-        cmds.forEach {
-            serial.write("$it\r\n")
-            var line = ""
-            runBlocking {
-                while (
-                    !line.startsWith("ERROR")
-                    && !line.startsWith("OK")
-                ) {
-                    line = channel.receive()
-                }
-                delay(500)
-            }
-        }
-        println("Command sequence complete")
-
+    private fun mapNetwork(x: Long): Long {
+        return (x - MIN_VAL) * (5 - 0) / (MAX_VAL - MIN_VAL) + 0
     }
-
-    fun send(linkId: Int, s: String, serial: Serial) {
-        reader.readyToSend = {
-            it.write(s)
-            reader.readyToSend = null
-        }
-        serial.write("AT+CIPSEND=$linkId,${s.length}\r\n")
-
-    }
-
-    data class Packet(val protocol: Int, val linkId: Int, val data: List<String>)
-
-    fun String.toPacket(): Packet {
-        // +IPD,0,7:[0,0]
-        val info = split(",")
-        val data = info[2].substringAfter("[").substringBefore("]").split(";")
-        println(data.joinToString())
-        return Packet(
-            linkId = info[1].toInt(),
-            protocol = data.first().toInt(),
-            data = data.subList(1, data.size)
-        ).apply { println(this) }
-    }
-
-    fun map(x: Long, in_min: Long, in_max: Long, out_min: Long, out_max: Long): Long {
-        return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
-    }
-
 
     companion object {
-        //const val serialPort = "/dev/ttyS0"
-        const val serialPort = "/dev/serial0"
         const val MAX_VAL = -20L // define maximum signal strength (in dBm)
         const val MIN_VAL = -80L // define minimum signal strength (in dBm)
 

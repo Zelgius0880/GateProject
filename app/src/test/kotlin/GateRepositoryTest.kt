@@ -1,4 +1,5 @@
 import com.zelgius.gateController.GateRepository
+import com.zelgius.gateController.GateSide
 import com.zelgius.gateController.GateStatus
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeAll
@@ -25,7 +26,7 @@ internal class GateRepositoryTest {
     fun getProgress() {
         runBlocking{
             assertNotNull(
-                repository.getProgress()
+                repository.getProgress(GateSide.Right)
             )
         }
     }
@@ -34,9 +35,9 @@ internal class GateRepositoryTest {
     fun setProgress() {
         runBlocking {
             val progress = Random.nextInt(100)
-            repository.setProgress(progress)
+            repository.setProgress(GateSide.Right, progress)
             assertEquals(
-                progress, repository.getProgress().also {
+                progress, repository.getProgress(GateSide.Right).also {
                     println(it)
                 }
             )
@@ -47,7 +48,7 @@ internal class GateRepositoryTest {
     fun getStatus() {
         runBlocking{
             assertNotNull(
-                repository.getProgress()
+                repository.getProgress(GateSide.Right)
             )
         }
     }
@@ -56,9 +57,9 @@ internal class GateRepositoryTest {
     fun setStatus() {
         runBlocking {
             val status = GateStatus.values()[Random.nextInt( GateStatus.values().size)]
-            repository.setStatus(status)
+            repository.setStatus(GateSide.Right, status)
             assertEquals(
-                status, repository.getStatus().also {
+                status, repository.getStatus(GateSide.Right).also {
                     println(it)
                 }
             )
@@ -69,13 +70,13 @@ internal class GateRepositoryTest {
     fun listenStatus() {
         val latch = CountDownLatch(1)
         val status = GateStatus.values()[Random.nextInt( GateStatus.values().size)]
-        repository.listenStatus {
-            assertEquals(it, status)
+        repository.listenStatus { _, s ->
+            assertEquals(s, status)
             latch.countDown()
         }
 
         runBlocking {
-            repository.setStatus(status)
+            repository.setStatus(GateSide.Right, status)
         }
         latch.await(5, TimeUnit.SECONDS)
         assertEquals(0, latch.count)
@@ -85,7 +86,7 @@ internal class GateRepositoryTest {
     fun getTime() {
         runBlocking{
             assertNotNull(
-                repository.getTime()
+                repository.getTime(GateSide.Right)
             )
         }
     }
@@ -94,9 +95,9 @@ internal class GateRepositoryTest {
     fun setTime() {
         runBlocking {
             val time = Random.nextLong( 1000)
-            repository.setTime(time)
+            repository.setTime(GateSide.Right, time)
             assertEquals(
-                time, repository.getTime().also {
+                time, repository.getTime(GateSide.Right).also {
                     println(it)
                 }
             )
@@ -107,7 +108,7 @@ internal class GateRepositoryTest {
     fun getCurrentStatus() {
         runBlocking{
             assertNotNull(
-                repository.getCurrentStatus()
+                repository.getCurrentStatus(GateSide.Right)
             )
         }
     }
@@ -116,9 +117,9 @@ internal class GateRepositoryTest {
     fun setCurrentStatus() {
         runBlocking {
             val status = GateStatus.values()[Random.nextInt( GateStatus.values().size)]
-            repository.setCurrentStatus(status)
+            repository.setCurrentStatus(GateSide.Right, status)
             assertEquals(
-                status, repository.getCurrentStatus().also {
+                status, repository.getCurrentStatus(GateSide.Right).also {
                     println(it)
                 }
             )

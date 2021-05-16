@@ -162,10 +162,32 @@ void dataReceived(char *s, uint16_t size)
   switch (f.protocol)
   {
   case 2:
-    if (f.buffer.getShort() == 0)
-      open(f.buffer.getShort());
+
+    uint16_t direction =  f.buffer.getShort();
+    uint16_t time = f.buffer.getShort();
+    uint16_t id = f.buffer.getShort();
+    if (direction == 0)
+      if (id == 0)
+      {
+        open1(time);
+      }
+      else
+      {
+        open2(time);
+      }
+
     else
-      close(f.buffer.getShort());
+    {
+      if (id == 0)
+      {
+        close1(time);
+      }
+      else
+      {
+        close2(time);
+      }
+    }
+
     break;
 
   default:
@@ -196,7 +218,7 @@ void send(char *data, uint16_t size)
   Serial1.write(data, size);
 }
 
-void open(uint32_t sleep)
+void open1(uint32_t sleep)
 {
   Serial.print("Opening during :");
   Serial.println(sleep);
@@ -204,24 +226,49 @@ void open(uint32_t sleep)
   digitalWrite(CLOSE1, 0);
   digitalWrite(CLOSE2, 0);
   digitalWrite(OPEN1, 1);
-  digitalWrite(OPEN2, 1);
+  digitalWrite(OPEN2, 0);
 
   delay(sleep);
   digitalWrite(OPEN1, 0);
-  digitalWrite(OPEN2, 0);
 }
 
-void close(uint32_t sleep)
+void close1(uint32_t sleep)
 {
   Serial.print("Closing during :");
   Serial.println(sleep);
   digitalWrite(OPEN1, 0);
   digitalWrite(OPEN2, 0);
   digitalWrite(CLOSE1, 1);
-  digitalWrite(CLOSE2, 1);
+  digitalWrite(CLOSE2, 0);
 
   delay(sleep);
   digitalWrite(CLOSE1, 0);
+}
+
+void open2(uint32_t sleep)
+{
+  Serial.print("Opening during :");
+  Serial.println(sleep);
+
+  digitalWrite(CLOSE1, 0);
+  digitalWrite(CLOSE2, 0);
+  digitalWrite(OPEN1, 0);
+  digitalWrite(OPEN2, 1);
+
+  delay(sleep);
+  digitalWrite(OPEN2, 0);
+}
+
+void close2(uint32_t sleep)
+{
+  Serial.print("Closing during :");
+  Serial.println(sleep);
+  digitalWrite(OPEN1, 0);
+  digitalWrite(OPEN2, 0);
+  digitalWrite(CLOSE1, 0);
+  digitalWrite(CLOSE2, 1);
+
+  delay(sleep);
   digitalWrite(CLOSE2, 0);
 }
 

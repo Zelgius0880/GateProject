@@ -1,58 +1,62 @@
 package com.zelgius.gateController
 
 class GateRepository : FirebaseRepository() {
-    suspend fun getProgress(): Int =
-        getSnapshot("gate", "states").let {
+    suspend fun getProgress(side: GateSide): Int =
+        getSnapshot("gate_${side.id}", "states").let {
             (it["progress"] as Long).toInt()
         }
 
 
-    suspend fun setProgress(progress: Int) =
-        set("gate" , "states", mapOf("progress" to progress))
+    suspend fun setProgress(side: GateSide, progress: Int) =
+        set("gate_${side.id}", "states", mapOf("progress" to progress))
 
-    suspend fun getTime(): Long =
-        getSnapshot("gate", "states").let {
+    suspend fun getTime(side: GateSide): Long =
+        getSnapshot("gate_${side.id}", "states").let {
             (it["time"] as Long)
         }
 
 
-    suspend fun setTime(time: Long) =
-        set("gate" , "states", mapOf("time" to time))
+    suspend fun setTime(side: GateSide, time: Long) =
+        set("gate_${side.id}" , "states", mapOf("time" to time))
 
 
-    suspend fun getStatus(): GateStatus =
-        GateStatus.valueOf(getSnapshot("gate", "states").let {
+    suspend fun getStatus(side: GateSide): GateStatus =
+        GateStatus.valueOf(getSnapshot("gate_${side.id}", "states").let {
             it["status"] as String
         })
 
 
-    suspend fun setStatus(status: GateStatus) {
-        set("gate" , "states", mapOf("status" to status))
+    suspend fun setStatus(side: GateSide, status: GateStatus) {
+        set("gate_${side.id}", "states", mapOf("status" to status))
     }
 
 
-    suspend fun getCurrentStatus(): GateStatus =
-        GateStatus.valueOf(getSnapshot("gate", "states").let {
+    suspend fun getCurrentStatus(side: GateSide): GateStatus =
+        GateStatus.valueOf(getSnapshot("gate_${side.id}", "states").let {
             it["current"] as String
         })
 
 
-    suspend fun setCurrentStatus(status: GateStatus) {
-        set("gate" , "states", mapOf("current" to status))
+    suspend fun setCurrentStatus(side: GateSide, status: GateStatus) {
+        set("gate_${side.id}", "states", mapOf("current" to status))
     }
-
-
 
     suspend fun setSignal(signal: Int) {
-        set("gate" , "states", mapOf("signal" to signal))
+        set("states","gate", mapOf("signal" to signal))
     }
 
-
-    fun listenStatus(callback: (GateStatus) -> Unit) {
-        listen("gate", "states") { documentSnapshot, firestoreException ->
+    fun listenStatus(callback: (GateSide, GateStatus) -> Unit) {
+        listen("gate_${GateSide.Left.id}", "states") { documentSnapshot, firestoreException ->
             if (firestoreException != null) throw firestoreException
             else documentSnapshot?.let {
-                callback(GateStatus.valueOf(it["status"].toString()))
+                callback(GateSide.Left, GateStatus.valueOf(it["status"].toString()))
+            }
+        }
+
+        listen("gate_${GateSide.Right.id}", "states") { documentSnapshot, firestoreException ->
+            if (firestoreException != null) throw firestoreException
+            else documentSnapshot?.let {
+                callback(GateSide.Right, GateStatus.valueOf(it["status"].toString()))
             }
         }
     }

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Gate Project</string>
+    <string name="connected">Connecté</string>
+    <string name="disconnected">Déconnecté</string>
+    <string name="permission_needed_connect_wifi">L\'application a besoin de ces permissions pour se connecter au wifi</string>
+    <string name="cannot_connect">Connexion impossible</string>
+    <string name="open">Ouvrir</string>
+    <string name="connect">Se connecter</string>
+    <string name="disconnect">Se déconnecter</string>
+    <string name="gate_signal">Signal</string>
+    <string name="progression">Progression</string>
+    <string name="not_working">Pas de réseau</string>
+    <string name="opening">Overture</string>
+    <string name="closing">Fermeture</string>
+    <string name="step_opening">Ourture par étape</string>
+    <string name="close">Fermer</string>
+    <string name="close_a_bit">Fermer un peu</string>
+    <string name="open_a_bit">Ouvrir un peu</string>
+    <string name="action">Action</string>
+    <string name="configuration">Configuration</string>
+    <string name="need_to_be_connected">La connexion au wifi de la barrière est nécessaire</string>
+    <string name="gate_not_closed">La barrière a besoin d\'être fermée pour commencer la configuration</string>
+    <string name="it_is_closed">Elle est fermée</string>
+    <string name="stop">Stop</string>
+    <string name="start">Commencer</string>
+    <string name="movement_time_format">Durée du mouvement: %d ms</string>
+    <string name="movement_time">Durée du mouvement</string>
+    <string name="opened">Ouverte</string>
+    <string name="closed">Fermée</string>
+    <string name="gate_project">Gate Project</string>
+    <string name="notification_channel">Progression</string>
+    <string name="channel_description">Affiche la progression de la barrière</string>
+</resources>
