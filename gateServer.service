@@ -1,0 +1,15 @@
+[Unit]
+Description=Controlling the Gate
+After=bluetooth.target
+
+[Service]
+ExecStart=/usr/bin/java -jar /root/GateController.jar
+WorkingDirectory=/root/
+StandardOutput=inherit
+StandardError=inherit
+Restart=always
+User=root
+
+[Install]
+WantedBy=multi-user.target
+

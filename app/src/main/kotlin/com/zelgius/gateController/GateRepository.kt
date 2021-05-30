@@ -3,7 +3,7 @@ package com.zelgius.gateController
 class GateRepository : FirebaseRepository() {
     suspend fun getProgress(side: GateSide): Int =
         getSnapshot("gate_${side.id}", "states").let {
-            (it["progress"] as Long).toInt()
+            (it["progress"] as Long?)?.toInt()?: 0
         }
 
 
@@ -12,7 +12,7 @@ class GateRepository : FirebaseRepository() {
 
     suspend fun getTime(side: GateSide): Long =
         getSnapshot("gate_${side.id}", "states").let {
-            (it["time"] as Long)
+            (it["time"] as Long?)?: 0
         }
 
 
@@ -30,11 +30,15 @@ class GateRepository : FirebaseRepository() {
         set("gate_${side.id}", "states", mapOf("status" to status))
     }
 
+    suspend fun setStatus(status: GateStatus) {
+        set("gate", "states", mapOf("status" to status))
+    }
+
 
     suspend fun getCurrentStatus(side: GateSide): GateStatus =
-        GateStatus.valueOf(getSnapshot("gate_${side.id}", "states").let {
-            it["current"] as String
-        })
+        (getSnapshot("gate_${side.id}", "states")["current"] as String?)?.let {
+            GateStatus.valueOf(it)
+        } ?: GateStatus.NOT_WORKING
 
 
     suspend fun setCurrentStatus(side: GateSide, status: GateStatus) {
@@ -42,26 +46,31 @@ class GateRepository : FirebaseRepository() {
     }
 
     suspend fun setSignal(signal: Int) {
-        set("states","gate", mapOf("signal" to signal))
+        set("gate","states", mapOf("signal" to signal))
     }
 
-    fun listenStatus(callback: (GateSide, GateStatus) -> Unit) {
-        listen("gate_${GateSide.Left.id}", "states") { documentSnapshot, firestoreException ->
-            if (firestoreException != null) throw firestoreException
-            else documentSnapshot?.let {
-                callback(GateSide.Left, GateStatus.valueOf(it["status"].toString()))
-            }
-        }
+    fun listenStatus(callback: (GateSide?, GateStatus) -> Unit) {
 
-        listen("gate_${GateSide.Right.id}", "states") { documentSnapshot, firestoreException ->
-            if (firestoreException != null) throw firestoreException
-            else documentSnapshot?.let {
-                callback(GateSide.Right, GateStatus.valueOf(it["status"].toString()))
+        db.collection("states")
+            .whereEqualTo("gate", true)
+            .addSnapshotListener { documentSnapshot, firebaseFirestoreException ->
+                if(firebaseFirestoreException != null) throw firebaseFirestoreException
+
+                documentSnapshot?.documentChanges?.forEach { change ->
+                    val side = (change.document["side"] as String?)?.let {  s ->
+                        GateSide.values().find { it.id == s}
+                    }
+
+                    (change.document["status"] as String?)?.let {  s ->
+                        GateStatus.values().find { it.name == s}
+                    }?.let {
+                        callback(side, it)
+                    }
+                }
             }
-        }
     }
 }
 
 enum class GateStatus {
-    OPENING, CLOSING, NOT_WORKING, OPENED, CLOSED
+    OPENING, CLOSING, NOT_WORKING, OPENED, CLOSED, MANUAL_OPENING, MANUAL_CLOSING,
 }

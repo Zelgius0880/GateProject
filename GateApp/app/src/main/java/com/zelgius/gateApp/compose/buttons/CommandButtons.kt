@@ -1,85 +1,55 @@
 package com.zelgius.gateApp.compose.buttons
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.twotone.Check
+import androidx.compose.material.icons.twotone.Close
+import androidx.compose.material.icons.twotone.Edit
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.zelgius.gateApp.GateStatus
 import com.zelgius.gateApp.R
-import com.zelgius.gateApp.WifiViewModel
 import java.util.*
-
-
-@Composable
-fun StepOpenButton(
-    wifiViewModel: WifiViewModel?,
-    modifier: Modifier = Modifier
-) { // nullable for preview
-    TextButton(
-        onClick = {
-            wifiViewModel?.stepOpenGate()
-        },
-        enabled = wifiViewModel?.working != true,
-        modifier = modifier
-    ) {
-        Text(
-            text = stringResource(id = R.string.open_a_bit),
-            color = MaterialTheme.colors.primaryVariant
-        )
-    }
-}
-
-@Composable
-fun StepCloseButton(
-    wifiViewModel: WifiViewModel?,
-    modifier: Modifier = Modifier
-) { // nullable for preview
-    TextButton(
-        onClick = {
-            wifiViewModel?.stepCloseGate()
-        },
-        enabled = wifiViewModel?.working != true,
-        modifier = modifier
-    ) {
-        Text(
-            text = stringResource(id = R.string.close_a_bit),
-            color = MaterialTheme.colors.secondaryVariant
-        )
-    }
-}
 
 @Composable
 fun OpenButton(
-    wifiViewModel: WifiViewModel?,
-    modifier: Modifier = Modifier
-) { // nullable for preview
+    status: GateStatus,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+    onStop: () -> Unit
+) {
 
-    if (wifiViewModel?.status != GateStatus.OPENING)
-        Button(
-            onClick = {
-                wifiViewModel?.openGate()
-            },
-            enabled = wifiViewModel?.status != GateStatus.OPENED,
+    if (status != GateStatus.OPENING)
+        OutlinedButton(
+            onClick = onClick,
+            enabled = status != GateStatus.OPENED,
             modifier = modifier,
-            colors = ButtonConstants.defaultButtonColors(MaterialTheme.colors.primaryVariant)
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colors.primaryVariant)
         ) {
 
             Text(
                 text = stringResource(id = R.string.open).toUpperCase(Locale.ROOT),
-                color = MaterialTheme.colors.onPrimary
             )
 
         }
     else
         TextButton(
-            onClick = {
+            onClick = onStop,/*{
                 wifiViewModel.stop()
-            },
+            }*/
             modifier = modifier,
         ) {
 
@@ -94,53 +64,59 @@ fun OpenButton(
 
 @Composable
 fun CloseButton(
-    wifiViewModel: WifiViewModel?,
-    modifier: Modifier = Modifier
-) { // nullable for preview
-    if (wifiViewModel?.status != GateStatus.CLOSING)
-        Button(
-            onClick = {
-                wifiViewModel?.closeGate()
-            },
-            enabled = wifiViewModel?.status != GateStatus.CLOSED,
+    status: GateStatus,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+    onStop: () -> Unit
+) {
+    if (status != GateStatus.CLOSING)
+        OutlinedButton(
+            onClick = onClick,
+            enabled = status != GateStatus.CLOSED,
             modifier = modifier,
-            colors = ButtonConstants.defaultButtonColors(MaterialTheme.colors.secondaryVariant)
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colors.secondaryVariant)
         ) {
 
             Text(
                 text = stringResource(id = R.string.close).toUpperCase(Locale.ROOT),
-                color = MaterialTheme.colors.onSecondary
             )
         }
     else
         TextButton(
-            onClick = {
-                wifiViewModel.stop()
-            },
+            onClick = onStop,
             modifier = modifier
         ) {
 
             Text(
                 text = stringResource(id = R.string.stop).toUpperCase(Locale.ROOT),
-                color = MaterialTheme.colors.secondary
+                color = MaterialTheme.colors.secondaryVariant
             )
         }
 }
 
 @Composable
-fun CardOpenClose(viewModel: WifiViewModel?, modifier: Modifier = Modifier) {
+fun CardOpenClose(
+    modifier: Modifier = Modifier,
+    onOpen: () -> Unit,
+    onClose: () -> Unit,
+    onStop: () -> Unit
+) {
     Card(modifier = Modifier.padding(8.dp) then modifier) {
         Column(modifier = Modifier.padding(8.dp) then Modifier.fillMaxWidth()) {
             Row(modifier = Modifier.padding(8.dp) then Modifier.fillMaxWidth()) {
 
                 OpenButton(
-                    wifiViewModel = viewModel,
-                    modifier = Modifier.padding(end = 4.dp) then Modifier.weight(1f)
+                    status = GateStatus.NOT_WORKING,
+                    modifier = Modifier.padding(end = 4.dp) then Modifier.weight(1f),
+                    onClick = onOpen,
+                    onStop = onStop
                 )
 
                 CloseButton(
-                    wifiViewModel = viewModel,
-                    modifier = Modifier.padding(start = 4.dp) then Modifier.weight(1f)
+                    status = GateStatus.NOT_WORKING,
+                    modifier = Modifier.padding(start = 4.dp) then Modifier.weight(1f),
+                    onClick = onClose,
+                    onStop = onStop
                 )
 
             }
@@ -150,145 +126,90 @@ fun CardOpenClose(viewModel: WifiViewModel?, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun CardConfiguration(
-    wifiViewModel: WifiViewModel?, modifier: Modifier = Modifier
-) {// nullable for preview
-
-    Card(modifier = Modifier.padding(8.dp) then modifier) {
-        Column(modifier = Modifier.padding(8.dp) then Modifier.fillMaxWidth()) {
-            Text(
-                text = stringResource(id = R.string.configuration),
-                style = MaterialTheme.typography.h5
-            )
-            if (wifiViewModel?.connected != true) {
-                Providers(AmbientContentAlpha provides ContentAlpha.medium) {
-                    Text(
-                        text = stringResource(id = R.string.need_to_be_connected),
-                        style = MaterialTheme.typography.subtitle1
-                    )
-                }
-            }
-
-            if (wifiViewModel?.connected != false) {
-                StepButtons(wifiViewModel)
-                StartConfiguration(viewModel = wifiViewModel)
-            }
-        }
-    }
-}
-
-
-@Composable
-fun StepButtons(wifiViewModel: WifiViewModel?) {
-    Text(
-        text = stringResource(id = R.string.step_opening),
-        modifier = Modifier.padding(top = 8.dp),
-        style = MaterialTheme.typography.subtitle1
-    )
-    Row(modifier = Modifier.padding(8.dp) then Modifier.fillMaxWidth()) {
-        StepOpenButton(
-            wifiViewModel = wifiViewModel,
-            modifier = Modifier.padding(end = 4.dp) then Modifier.weight(1f)
-        )
-        StepCloseButton(
-            wifiViewModel = wifiViewModel,
-            modifier = Modifier.padding(start = 4.dp) then Modifier.weight(1f)
-        )
-    }
-}
-
-
-@Composable
-fun StartConfiguration(viewModel: WifiViewModel?) {
-    Column {
-        if (viewModel?.status != GateStatus.CLOSED && viewModel?.config != true) {
-            Providers(AmbientContentColor provides MaterialTheme.colors.error) {
-                Text(
-                    text = stringResource(id = R.string.gate_not_closed),
-                    style = MaterialTheme.typography.subtitle1
-                )
-
-                Button(onClick = { viewModel?.forceClose() }) {
-                    Text(text = stringResource(id = R.string.it_is_closed).toUpperCase(Locale.ROOT))
-                }
-            }
-        } else {
-            Button(onClick = {
-                if (!viewModel.config)
-                    viewModel.startConfig()
-                else
-                    viewModel.stopConfig()
-            }) {
-                Text(
-                    text = stringResource(id = if (!viewModel.config) R.string.start else R.string.stop).toUpperCase(
-                        Locale.ROOT
-                    )
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun CardTime(viewModel: WifiViewModel?, modifier: Modifier = Modifier) {
+fun Time(time: Long, modifier: Modifier = Modifier, onTimeUpdated: (time: Long) -> Unit) {
     var edit by remember { mutableStateOf(false) }
-    var text by remember { mutableStateOf("${viewModel?.time ?: 0L}") }
-    Card(modifier = Modifier.padding(8.dp) then modifier) {
-        Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (!edit) {
+    var text by remember { mutableStateOf("$time") }
+
+    Crossfade(targetState = edit, modifier = modifier) {
+        if (!it) {
+            Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     modifier = Modifier.weight(1f),
                     text = stringResource(
                         id = R.string.movement_time_format,
-                        viewModel?.time ?: 0
+                        time
                     )
                 )
 
-                IconButton(onClick = { edit = true }) {
+                IconButton(
+                    onClick = { edit = true },
+                ) {
                     Icon(
-                        imageVector = vectorResource(
-                            R.drawable.ic_baseline_edit_24
-                        ), tint = MaterialTheme.colors.primary
+                        Icons.TwoTone.Edit,
+                        tint = MaterialTheme.colors.primary,
+                        contentDescription = null
                     )
                 }
-            } else {
+            }
+        } else {
+            Row(
+                modifier = Modifier.padding(
+                    8.dp
+                ), verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(
                     text = "${
                         stringResource(
                             id = R.string.movement_time,
-                            viewModel?.time ?: 0
+                            time
                         )
-                    }:"
+                    }:",
+                    modifier = Modifier.padding(end = 4.dp)
                 )
 
-                OutlinedTextField(
+                BasicTextField(
                     value = text,
-                    onValueChange = { text = it },
-                    modifier = Modifier.weight(1f),
+                    onValueChange = { s -> text = s },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier
+                        .weight(1f)
+                        .border(
+                            BorderStroke(2.dp, color = MaterialTheme.colors.background),
+                            RoundedCornerShape(10)
+                        )
+                        .padding(4.dp),
                 )
 
-                Text(text = "ms")
+                Text(text = "ms", modifier = Modifier.padding(start = 4.dp))
 
                 IconButton(
                     onClick = {
                         edit = false
+                        text = "$time"
                     },
+                    modifier = Modifier
                 ) {
                     Icon(
-                        imageVector = vectorResource(
-                            R.drawable.ic_twotone_close_24
-                        ), tint = MaterialTheme.colors.secondary
+                        imageVector = Icons.TwoTone.Close,
+                        tint = MaterialTheme.colors.secondary,
+                        contentDescription = null
                     )
                 }
 
-                IconButton(onClick = {
-                    edit = false
-                    viewModel?.setMovingTime(text.toLong())
-                }) {
+                IconButton(modifier = Modifier,
+                    onClick = {
+                        edit = false
+                        text.toLongOrNull().let {
+                            if (it == null)
+                                text = "$time"
+                            else
+                                onTimeUpdated(it)
+                        }
+                    }) {
                     Icon(
-                        imageVector = vectorResource(
-                            R.drawable.ic_twotone_check_24
-                        ), tint = MaterialTheme.colors.primary
+                        imageVector = Icons.TwoTone.Check,
+                        tint = MaterialTheme.colors.primary,
+                        contentDescription = null
                     )
                 }
             }
@@ -300,7 +221,20 @@ fun CardTime(viewModel: WifiViewModel?, modifier: Modifier = Modifier) {
 @Composable
 @Preview
 fun TimeCardPreview() {
-    CardTime(null, Modifier.padding(8.dp))
+    Time(500, Modifier.padding(8.dp)) {}
+}
+
+
+@Composable
+@Preview
+fun OpenButtonPreview() {
+    OpenButton(GateStatus.NOT_WORKING, Modifier.padding(8.dp), onClick = {}, onStop = {})
+}
+
+@Composable
+@Preview
+fun CloseButtonPreview() {
+    CloseButton(GateStatus.NOT_WORKING, Modifier.padding(8.dp), onClick = {}, onStop = {})
 }
 
 

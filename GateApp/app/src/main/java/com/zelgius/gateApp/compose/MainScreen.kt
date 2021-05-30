@@ -1,51 +1,77 @@
 package com.zelgius.gateApp.compose
 
-import android.content.Context
-import androidx.compose.foundation.ScrollableColumn
-import androidx.compose.foundation.layout.*
+import android.app.Application
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.rememberScrollableState
+import androidx.compose.foundation.gestures.scrollable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.viewinterop.viewModel
+import com.zelgius.gateApp.GateSide
 import com.zelgius.gateApp.GateStatus
-import com.zelgius.gateApp.R
-import com.zelgius.gateApp.WifiViewModel
-import com.zelgius.gateApp.compose.buttons.*
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.channels.BroadcastChannel
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.asFlow
+import com.zelgius.gateApp.GateViewModel
+import com.zelgius.gateApp.SnackbarMessage
+import com.zelgius.gateApp.compose.buttons.AppTopBar
+import com.zelgius.gateApp.compose.buttons.CardOpenClose
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectIndexed
+import androidx.compose.foundation.rememberScrollState
 
-@ExperimentalCoroutinesApi
-val snackbarChannel = BroadcastChannel<SnackbarMessage>(Channel.CONFLATED)
+val LightColors = lightColors(
+    background = Color(0xFFf5f5f5)
+)
 
-@ExperimentalCoroutinesApi
-@FlowPreview
-@ExperimentalMaterialApi
 @Composable
 fun MainScreen(
-    wifiViewModel: WifiViewModel,
-    needRequestingPermission: ((Context, Boolean) -> Unit) -> Unit,
+    viewModel: GateViewModel,
 ) {
-    // decouple snackbar host state from scaffold state for demo purposes
-// this state, channel and flow is for demo purposes to demonstrate business logic layer
-    val snackbarHostState = remember { SnackbarHostState() }
-// we allow only one snackbar to be in the queue here, hence conflated
 
-    LaunchedEffect(snackbarChannel) {
-        snackbarChannel.asFlow().collectIndexed { _, value ->
-            val result = snackbarHostState.showSnackbar(
-                message = value.text,
-                actionLabel = value.action
+    val scaffoldState = rememberScaffoldState()
+
+    Snackbar(viewModel.messageFlow, state = scaffoldState.snackbarHostState)
+
+    MaterialTheme(colors = LightColors) {
+        val signal by viewModel.signal.observeAsState(0)
+
+        Scaffold(
+            scaffoldState = scaffoldState,
+            topBar = { AppTopBar(signal = signal) },
+            content = {
+                Column(modifier = Modifier.verticalScroll(
+                    rememberScrollState()
+                )) {
+
+                    CardOpenClose(Modifier.fillMaxWidth(),
+                        onOpen = { viewModel.openGate() },
+                        onClose = { viewModel.closeGate() },
+                        onStop = { viewModel.stop() }
+                    )
+
+                    CardSide(GateSide.Left, viewModel = viewModel)
+                    CardSide(GateSide.Right, viewModel = viewModel)
+                }
+            }
+        )
+    }
+}
+
+@Composable
+fun Snackbar(flow: Flow<SnackbarMessage>, state: SnackbarHostState) {
+    LaunchedEffect(flow) {
+        flow.collectIndexed { _, message ->
+            val result = state.showSnackbar(
+                message = message.message,
+                actionLabel = message.action?.message
             )
             when (result) {
                 SnackbarResult.ActionPerformed -> {
-                    value.actionClicked?.invoke()
+                    message.action?.action?.work()
                 }
                 SnackbarResult.Dismissed -> {
                     /* dismissed, no action needed */
@@ -53,75 +79,10 @@ fun MainScreen(
             }
         }
     }
-
-    MaterialTheme {
-        val state = rememberScaffoldState(snackbarHostState = snackbarHostState)
-        Scaffold(
-            scaffoldState = state,
-            topBar = { AppTopBar(connected = wifiViewModel.connected == true) { wifiViewModel.connectToGateWifi() } },
-            bodyContent = {
-                ScrollableColumn {
-                    CardStatus(
-                        signalStrength = wifiViewModel.signal,
-                        progress = wifiViewModel.progress,
-                        action = wifiViewModel.status, Modifier.fillMaxWidth()
-                    )
-
-                    CardOpenClose(viewModel = wifiViewModel, Modifier.fillMaxWidth())
-                    CardTime(viewModel = wifiViewModel, Modifier.fillMaxWidth())
-                    CardConfiguration(wifiViewModel = wifiViewModel, Modifier.fillMaxWidth())
-                }
-            }
-        )
-    }
 }
 
 @Composable
-fun ProgressIndicator(working: Boolean) {
-    if (working) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopEnd) {
-            CircularProgressIndicator()
-        }
-    }
-}
-
-@ExperimentalCoroutinesApi
-@Composable
-fun ConnectionStateSnackbar(connectedState: Boolean?) {
-    val connected = remember { connectedState }
-    connected?.let {
-        if (it) {
-            snackbarChannel.offer(SnackbarMessage(stringResource(id = R.string.connected)))
-        } else {
-            snackbarChannel.offer(SnackbarMessage(stringResource(id = R.string.cannot_connect)))
-        }
-    }
-
-}
-
-class SnackbarMessage(
-    val text: String,
-    val action: String? = null,
-    val actionClicked: (() -> Unit)? = null
-)
-
 @Preview
-@Composable
 fun MainScreenPreview() {
-    MaterialTheme {
-        Scaffold(
-            bodyContent = {
-                ProgressIndicator(working = true)
-
-                Column {
-                    ConnectButton(connected = false) {}
-
-                    Row {
-                        StepOpenButton(wifiViewModel = null)
-                        StepCloseButton(wifiViewModel = null)
-                    }
-                }
-            }
-        )
-    }
+    MainScreen(viewModel = GateViewModel(Application()))
 }

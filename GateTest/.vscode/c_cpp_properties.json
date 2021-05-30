@@ -1,0 +1,60 @@
+//
+// !!! WARNING !!! AUTO-GENERATED FILE!
+// PLEASE DO NOT MODIFY IT AND USE "platformio.ini":
+// https://docs.platformio.org/page/projectconf/section_env_build.html#build-flags
+//
+{
+    "configurations": [
+        {
+            "name": "PlatformIO",
+            "includePath": [
+                "d:/Projects/Gate/GateTest/include",
+                "d:/Projects/Gate/GateTest/src",
+                "d:/Projects/Gate/GateTest/.pio/libdeps/megaatmega2560/BTS7960/src",
+                "C:/Users/Florian/.platformio/packages/framework-arduino-avr/cores/arduino",
+                "C:/Users/Florian/.platformio/packages/framework-arduino-avr/variants/mega",
+                "d:/Projects/Gate/GateTest/.pio/libdeps/megaatmega2560/Servo/src",
+                "C:/Users/Florian/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
+                "C:/Users/Florian/.platformio/packages/framework-arduino-avr/libraries/HID/src",
+                "C:/Users/Florian/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
+                "C:/Users/Florian/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src",
+                "C:/Users/Florian/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
+                ""
+            ],
+            "browse": {
+                "limitSymbolsToIncludedHeaders": true,
+                "path": [
+                    "d:/Projects/Gate/GateTest/include",
+                    "d:/Projects/Gate/GateTest/src",
+                    "d:/Projects/Gate/GateTest/.pio/libdeps/megaatmega2560/BTS7960/src",
+                    "C:/Users/Florian/.platformio/packages/framework-arduino-avr/cores/arduino",
+                    "C:/Users/Florian/.platformio/packages/framework-arduino-avr/variants/mega",
+                    "d:/Projects/Gate/GateTest/.pio/libdeps/megaatmega2560/Servo/src",
+                    "C:/Users/Florian/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
+                    "C:/Users/Florian/.platformio/packages/framework-arduino-avr/libraries/HID/src",
+                    "C:/Users/Florian/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
+                    "C:/Users/Florian/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src",
+                    "C:/Users/Florian/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
+                    ""
+                ]
+            },
+            "defines": [
+                "PLATFORMIO=50100",
+                "ARDUINO_AVR_MEGA2560",
+                "F_CPU=16000000L",
+                "ARDUINO_ARCH_AVR",
+                "ARDUINO=10808",
+                "__AVR_ATmega2560__",
+                ""
+            ],
+            "cStandard": "c11",
+            "cppStandard": "c++11",
+            "compilerPath": "C:/Users/Florian/.platformio/packages/toolchain-atmelavr@1.50400.190710/bin/avr-gcc.exe",
+            "compilerArgs": [
+                "-mmcu=atmega2560",
+                ""
+            ]
+        }
+    ],
+    "version": 4
+}

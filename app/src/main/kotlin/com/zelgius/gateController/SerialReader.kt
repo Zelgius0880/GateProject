@@ -5,7 +5,7 @@ import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.runBlocking
 
-class SerialReader(private val channel: Channel<String>, private val serial: Serial) : Thread() {
+class SerialReader(val channel: Channel<String>, private val serial: Serial) : Thread() {
     var stop = false
         set(value) {
             field = value

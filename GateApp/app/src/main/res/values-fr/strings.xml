@@ -10,7 +10,7 @@
     <string name="disconnect">Se déconnecter</string>
     <string name="gate_signal">Signal</string>
     <string name="progression">Progression</string>
-    <string name="not_working">Pas de réseau</string>
+    <string name="not_working">A l\'arrêt</string>
     <string name="opening">Overture</string>
     <string name="closing">Fermeture</string>
     <string name="step_opening">Ourture par étape</string>
@@ -31,4 +31,10 @@
     <string name="gate_project">Gate Project</string>
     <string name="notification_channel">Progression</string>
     <string name="channel_description">Affiche la progression de la barrière</string>
+    <string name="left_side">Côté Gauche</string>
+    <string name="right_side">Côté Droit</string>
+    <string name="manual_opening">Ouverture Manuelle</string>
+    <string name="settings">Configuration</string>
+    <string name="movement_duration">"L'ouverture/fermeture a duré %d ms "</string>
+    <string name="save_time">Enregistrer</string>
 </resources>

@@ -1,17 +1,19 @@
 package com.zelgius.gateController
 
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
 
 class GateController {
 
     private val repository = GateRepository()
-    private var gate: Gate? = null
-    private var config: GateConfig? = null
+    private var gate: GateWork? = null
 
     private var currentStateLeft = GateStatus.NOT_WORKING
     private var currentStateRight = GateStatus.NOT_WORKING
 
     private var initComplete = false
+
+    private val controllerScope = CoroutineScope(Dispatchers.Default)
+    private var job: Job? = null
 
     private val networkService: NetworkService = ESP8266NetworkService(
         onConnectionClosed = {
@@ -32,63 +34,119 @@ class GateController {
     }
 
     private fun startListening() {
+        println("Start listening")
         initComplete = true
         repository.listenStatus { side, status ->
-            println("Status has changed: $status")
-            if ((side == GateSide.Left && currentStateLeft != status) ||
-                (side == GateSide.Right && currentStateRight != status)
-            ) {
+            println("Status has changed: $side , $status")
 
-                val id = if (side == GateSide.Left) {
-                    currentStateLeft = status
-                    0
-                } else {
-                    currentStateRight = status
-                    1
+            if (side != null) {
+                getSide(side, status)?.apply {
+                    println("here")
+                    if(job == null || job?.isCompleted == true || job?.isCancelled == true)stopWorks(null)
+                    gate = this
+                    start()
                 }
+            } else {
+                if (status != GateStatus.NOT_WORKING) {
+                    println("there")
+                    stopWorks(null)
 
-                when (status) {
-                    GateStatus.NOT_WORKING -> {
-                        stopWorks()
-                    }
-                    GateStatus.OPENING -> {
-                        stopWorks()
-                        gate = Gate(side, repository) { time ->
-                            if (networkService.sendToGate("[2;0;$time;$id]\r\n")) {
-                                true
-                            } else {
-                                stopWorks()
-                                false
-                            }
-                        }.apply { start() }
-                    }
+                    job = controllerScope.launch {
 
-                    GateStatus.CLOSING -> {
-                        stopWorks()
-                        gate = Gate(side, repository) { time ->
-                            if (networkService.sendToGate("[2;1;$time;$id]\r\n")) {
-                                true
-                            } else {
-                                stopWorks()
-                                false
-                            }
-                        }.apply { start() }
-                    }
+                        println("--- Starting Moving Right ---")
+                        currentStateRight = status
+                        GateOpening(networkService, GateSide.Right, repository).apply {
+                            gate = this
+                        }.run()
 
-                    else -> {
+                        println("--- Starting Moving Left ---")
+                        currentStateLeft = status
+                        GateOpening(networkService, GateSide.Left, repository).apply {
+                            gate = this
+                        }.run()
+
+                        repository.setStatus(GateStatus.NOT_WORKING)
                     }
                 }
             }
         }
     }
 
-    private fun stopWorks() {
-        gate?.stop = true
-        gate?.join()
-        config?.stop = true
-        config?.join()
-        config = null
-        gate = null
+    private fun getSide(
+        side: GateSide,
+        status: GateStatus,
+    ): GateWork? =
+        if ((side == GateSide.Left && currentStateLeft != status) ||
+            (side == GateSide.Right && currentStateRight != status)
+        ) {
+
+            val oldStatus = if (side == GateSide.Left) {
+                currentStateLeft
+            } else {
+                currentStateRight
+            }
+
+            if (side == GateSide.Left) {
+                currentStateLeft = status
+            } else {
+                currentStateRight = status
+            }
+
+            when (status) {
+                GateStatus.NOT_WORKING -> {
+                    stopWorks(side)
+                    null
+                }
+                GateStatus.OPENING -> {
+                    if (oldStatus != GateStatus.OPENED) {
+                        GateOpening(networkService, side, repository)
+                    } else {
+                        controllerScope.launch {
+                            repository.setStatus(GateStatus.OPENED)
+                        }
+                        null
+                    }
+                }
+
+                GateStatus.CLOSING -> {
+                    if (oldStatus != GateStatus.CLOSED) {
+                        GateOpening(networkService, side, repository)
+                    } else {
+                        controllerScope.launch {
+                            repository.setStatus(GateStatus.CLOSED)
+                        }
+                        null
+                    }
+                }
+
+                GateStatus.MANUAL_OPENING -> {
+                    ManualGateOpening(networkService, side, true)
+                }
+
+                GateStatus.MANUAL_CLOSING -> {
+                    ManualGateOpening(networkService, side, false)
+                }
+
+                else -> {
+                    null
+                }
+            }
+        } else null
+
+
+    private fun stopWorks(side: GateSide?) {
+        println("Stopping $side -> ${gate?.side}")
+        if(job?.isActive == true) job?.cancel()
+        if (side == null || side == gate?.side) {
+            gate?.stop = true
+
+            println("Stopping ${gate?.side}")
+            runBlocking {
+                gate?.await()
+            }
+            println("Stopped ${gate?.side}")
+            gate = null
+        }
     }
 
     private fun handleData(packet: Packet): Long {
@@ -102,32 +160,15 @@ class GateController {
                 } else networkService.appId = packet.linkId
                 0
             }
-
-            2 -> {
-                networkService.sendToGate("[2;${packet.data[0]};${packet.data[1]};0]\r\n")
-                networkService.sendToGate("[2;${packet.data[0]};${packet.data[1]};1]\r\n")
-                stopWorks()
-                packet.data[1].toLong()
-            }
-
-            3 -> {
-                stopWorks()
-                if (packet.data.first() == "0") {
-                    val side = if(packet.data[1] == "0") GateSide.Left else GateSide.Right
-                    config = GateConfig(side, repository) { time ->
-                        networkService.sendToGate("[2;0;$time;0]\r\n")
-                    }.apply {
-                        start()
-                    }
-                } else {
-                    config?.stop = true
-                }
-                0
-            }
-
             4 -> {
                 runBlocking {
-                    repository.setSignal(mapNetwork(packet.data.first().toLong()).toInt())
+                    repository.setSignal(
+                        mapNetwork(
+                            packet.data.first().toLong()
+                                .coerceAtLeast(MIN_VAL)
+                                .coerceAtMost(MAX_VAL)
+                        ).toInt()
+                    )
                 }
                 0
             }
@@ -142,8 +183,8 @@ class GateController {
     }
 
     companion object {
-        const val MAX_VAL = -20L // define maximum signal strength (in dBm)
-        const val MIN_VAL = -80L // define minimum signal strength (in dBm)
+        const val MAX_VAL = -50L // define maximum signal strength (in dBm)
+        const val MIN_VAL = -100L // define minimum signal strength (in dBm)
 
     }
 }

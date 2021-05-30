@@ -9,7 +9,7 @@
     <string name="disconnect">Disconnect</string>
     <string name="gate_signal">Gate signal</string>
     <string name="progression">Progression</string>
-    <string name="not_working">Not working</string>
+    <string name="not_working">Not moving</string>
     <string name="opening">Opening</string>
     <string name="closing">Closing</string>
     <string name="step_opening">Step opening</string>
@@ -28,6 +28,12 @@
     <string name="opened">Opened</string>
     <string name="closed">Closed</string>
     <string name="gate_project">Gate Project</string>
-    <string name="notification_channel">"Progression "</string>
+    <string name="notification_channel">Progression</string>
     <string name="channel_description">Show the progression of the gate</string>
+    <string name="left_side">Left Side</string>
+    <string name="right_side">Right Side</string>
+    <string name="manual_opening">Manual Opening</string>
+    <string name="settings">Settings</string>
+    <string name="movement_duration">Movement last %d ms</string>
+    <string name="save_time">Save time</string>
 </resources>

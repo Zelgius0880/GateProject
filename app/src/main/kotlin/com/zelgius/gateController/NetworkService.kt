@@ -8,10 +8,7 @@ interface NetworkService {
 
     // The return is the time to delay
     suspend fun start(onDataReceived: (Packet) -> Long)
-    fun sendToApp(data: String): Boolean
-    fun sendToGate(data: String): Boolean
-
-
+    suspend fun sendToGate(data: String): Boolean
 }
 
 

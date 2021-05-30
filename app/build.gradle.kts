@@ -29,11 +29,10 @@ repositories {
 
 val mainPackage = "com.zelgius.gateController"
 group = mainPackage
-version = "1.0-SNAPSHOT"
 
 
 var raspberry = remotes.create("raspberry") {
-    host = "192.168.1.23"
+    host = "192.168.1.225"
     user = "pi"
     password = getProps("password")
 }
@@ -61,6 +60,7 @@ tasks {
                 attributes(mapOf("Main-Class" to "$mainPackage.MainKt"))
             }
         }
+        archiveVersion .set("1.1-SNAPSHOT")
         archiveBaseName.set("GateController")
         mergeServiceFiles()
 
@@ -85,7 +85,7 @@ tasks.create("deploy") {
 
                 logger.lifecycle("Deploying ...")
                 put( file( getProps("firebase_admin_file")), "/home/pi/")
-                put(archive, "/home//pi/")
+                put(archive, "/home/pi/")
                 logger.lifecycle(execute("sudo pkill -f ${archive.name}"))
                 logger.lifecycle(execute("chmod +x ${archive.name}"))
                 logger.lifecycle(execute("sudo java -jar ${archive.name}"))
@@ -99,8 +99,16 @@ tasks.create("copy") {
         ssh.runSessions {
             session(raspberry) {
                 val archive = jarFile.archiveFile.get().asFile
-                put(archive, File("/home//pi/"))
-                logger.warn(execute("chmod +x ${archive.name}"))
+                try {
+                    execute("sudo rm ${archive.name}")
+                } catch (e: Exception) {
+                    logger.error(e.message)
+                }
+
+                put( file( getProps("firebase_admin_file")), "/home/pi/")
+                put(archive, "/home/pi/")
+                logger.lifecycle(execute("sudo pkill -f ${archive.name}"))
+                logger.lifecycle(execute("chmod +x ${archive.name}"))
             }
         }
     }

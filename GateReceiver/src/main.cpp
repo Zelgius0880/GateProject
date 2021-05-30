@@ -9,6 +9,9 @@ int cmdResult = 0;
 bool connected = 0;
 bool helloSend = 0;
 
+Gate left = Gate(3, 2, 5, 4);
+Gate right = Gate(7, 6, 9, 8);
+
 uint64_t signalSend = 0;
 
 bool startsWith(const char *pre, const char *str)
@@ -18,8 +21,23 @@ bool startsWith(const char *pre, const char *str)
   return lenstr < lenpre ? false : memcmp(pre, str, lenpre) == 0;
 }
 
+void setConnected()
+{
+    digitalWrite(GREEN, HIGH);
+    digitalWrite(RED, LOW);
+}
+
+void setDisconnected()
+{
+  digitalWrite(GREEN, LOW);
+  digitalWrite(RED, HIGH);
+}
+
 void reset()
 {
+
+  setDisconnected();
+  delay(100);
   bool connected = 0;
   bool helloSend = 0;
   uint16_t setupCmdIndex = 0;
@@ -34,13 +52,15 @@ void setup()
 
   Serial1.setTimeout(10000);
   Serial1.begin(115200); // Begin Serial at 2400 baud;
+
+  pinMode(RED, OUTPUT);
+  pinMode(GREEN, OUTPUT);
+
   reset();
 
   pinMode(LED_BUILTIN, OUTPUT);
-  pinMode(CLOSE1, OUTPUT);
-  pinMode(CLOSE2, OUTPUT);
-  pinMode(OPEN1, OUTPUT);
-  pinMode(OPEN2, OUTPUT);
+
+  signalSend = millis();
 }
 
 void loop()
@@ -81,15 +101,16 @@ void loop()
     connected = true;
     cmdResult = 0;
     send("[0;0]\r\n", strlen("[0;0]\r\n"));
+
+    setConnected();
   }
 
   else if (helloSend && connected && (signalSend == 0 || millis() - signalSend > 5 * 60 * 1000))
   {
-    //Serial.println(millis(), DEC);
     signalSend = millis();
-    delay(100);
-    //Serial1.write("AT+CWJAP?\r\n");
-    Serial1.write("AT+CWLAP=\"U0c5vEPY2xzC3i0WnweR\"\r\n");
+    delay(1000);
+
+    Serial1.write(CWLAP_CMD.c_str());
   }
 }
 
@@ -119,6 +140,7 @@ void handleResult(char *s, uint16_t size)
 
   else if (startsWith("WIFI DISCONNECT", s) && setupCmdIndex >= SETUP_CMD_LEGTH)
   {
+    setDisconnected();
     reset();
   }
 
@@ -128,14 +150,17 @@ void handleResult(char *s, uint16_t size)
     cmdResult = 3;
     connected = false;
     helloSend = false;
-    Serial1.write("AT+CIPSTART=\"TCP\",\"192.168.4.1\",1000\r\n");
+    Serial1.write(CONNECT_SERVER_CMD.c_str());
+
+    setDisconnected();
   }
 
   else if (startsWith("FAIL", s))
   {
+    setDisconnected();
     helloSend = false;
     delay(20 * 1000);
-    Serial1.write("AT+CWJAP_CUR=\"U0c5vEPY2xzC3i0WnweR\",\"KGaPoM7bfVzfW5bSyoAaQ\"\r\n");
+    Serial1.write(SSID_CMD.c_str());
   }
   else if (startsWith("+CWLAP", s))
   {
@@ -159,47 +184,53 @@ void dataReceived(char *s, uint16_t size)
   Frame f;
   f.parse(s, size);
 
-  switch (f.protocol)
+  if (f.valid)
   {
-  case 2:
-
-    uint16_t direction =  f.buffer.getShort();
-    uint16_t time = f.buffer.getShort();
-    uint16_t id = f.buffer.getShort();
-    if (direction == 0)
-      if (id == 0)
-      {
-        open1(time);
-      }
-      else
-      {
-        open2(time);
-      }
-
-    else
+    switch (f.protocol)
     {
-      if (id == 0)
-      {
-        close1(time);
-      }
+    case 2:
+
+      uint16_t direction = f.buffer.getShort();
+      uint16_t time = f.buffer.getShort();
+      uint16_t id = f.buffer.getShort();
+      if (direction == 0)
+        if (id == 0)
+        {
+          left.open(time);
+        }
+        else
+        {
+          right.open(time);
+        }
+
       else
       {
-        close2(time);
+        if (id == 0)
+        {
+          left.close(time);
+        }
+        else
+        {
+          right.close(time);
+        }
       }
+
+      break;
+
+    default:
+      break;
     }
-
-    break;
-
-  default:
-    break;
   }
 }
 
-void send(char *data, uint16_t size)
+bool send(char *data, uint16_t size)
 {
+
   char cmd[64];
   sprintf(cmd, "AT+CIPSEND=%d\r\n", size);
-  Serial.write("Sending");
+  Serial.print("Sending: ");
+  Serial.println(data);
+  Serial.println(cmd);
   Serial1.write(cmd);
 
   uint8_t b = Serial1.read();
@@ -212,69 +243,29 @@ void send(char *data, uint16_t size)
   while (b != '\n') //  Loop until the end of the ok answer
     b = Serial1.read();
 
-  while (b != '>' && b != '\n')
+  char result[128] = {0};
+
+  uint8_t i = 0;
+  while (b != '>' && startsWith("ERROR", result))
+  {
+    b = Serial1.read();
+
+    if (i < 128)
+      result[i] = b;
+
+    ++i;
+  }
+
+  while (b != '\n' && b != '>')
     b = Serial1.read();
 
   Serial1.write(data, size);
-}
 
-void open1(uint32_t sleep)
-{
-  Serial.print("Opening during :");
-  Serial.println(sleep);
-
-  digitalWrite(CLOSE1, 0);
-  digitalWrite(CLOSE2, 0);
-  digitalWrite(OPEN1, 1);
-  digitalWrite(OPEN2, 0);
-
-  delay(sleep);
-  digitalWrite(OPEN1, 0);
-}
-
-void close1(uint32_t sleep)
-{
-  Serial.print("Closing during :");
-  Serial.println(sleep);
-  digitalWrite(OPEN1, 0);
-  digitalWrite(OPEN2, 0);
-  digitalWrite(CLOSE1, 1);
-  digitalWrite(CLOSE2, 0);
-
-  delay(sleep);
-  digitalWrite(CLOSE1, 0);
-}
-
-void open2(uint32_t sleep)
-{
-  Serial.print("Opening during :");
-  Serial.println(sleep);
-
-  digitalWrite(CLOSE1, 0);
-  digitalWrite(CLOSE2, 0);
-  digitalWrite(OPEN1, 0);
-  digitalWrite(OPEN2, 1);
-
-  delay(sleep);
-  digitalWrite(OPEN2, 0);
-}
-
-void close2(uint32_t sleep)
-{
-  Serial.print("Closing during :");
-  Serial.println(sleep);
-  digitalWrite(OPEN1, 0);
-  digitalWrite(OPEN2, 0);
-  digitalWrite(CLOSE1, 0);
-  digitalWrite(CLOSE2, 1);
-
-  delay(sleep);
-  digitalWrite(CLOSE2, 0);
+  return b == '>';
 }
 
 int extractSignal(char *s, uint16_t size)
 {
-
   // +CWLAP:(2,"U0c5vEPY2xzC3i0WnweR",-16,"ca:2b:96:00:9a:de",5,91,0)
 
   uint16_t i, j;

@@ -17,5 +17,6 @@ public:
     void parse(char *s, uint16_t size);
     uint8_t protocol;
     Buffer buffer;
+    bool valid = true;
 };
 #endif //GATERECEIVER_FRAME_H

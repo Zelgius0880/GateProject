@@ -1,39 +1,15 @@
 package com.zelgius.gateApp
 
-import android.util.Log
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
-
-
 class GateRepository : FirebaseRepository() {
-    suspend fun getProgress(): Int =
-        getSnapshot("gate", "states").let {
-            (it["progress"] as Long).toInt()
-        }
 
-    suspend fun goOffline() = suspendCoroutine<Unit> { cont ->
-        db.disableNetwork().addOnCompleteListener {
-            cont.resume(Unit)
-        }
-    }
-
-    suspend fun goOnline() = suspendCoroutine<Unit> { cont ->
-        db.enableNetwork().addOnCompleteListener {
-            cont.resume(Unit)
-        }
-    }
-
-    suspend fun setProgress(progress: Int) =
-        set("gate", "states", mapOf("progress" to progress))
-
-    suspend fun getTime(): Long =
-        getSnapshot("gate", "states").let {
-            (it["time"] as Long)
-        }
+    suspend fun setTime(side: GateSide, time: Long) =
+        set("gate_${side.id}", "states", mapOf("time" to time))
 
 
-    suspend fun setTime(time: Long) =
-        set("gate", "states", mapOf("time" to time))
+    suspend fun getStatus(side: GateSide): GateStatus =
+        GateStatus.valueOf(getSnapshot("gate_${side.id}", "states").let {
+            it["status"] as String
+        })
 
 
     suspend fun getStatus(): GateStatus =
@@ -42,68 +18,95 @@ class GateRepository : FirebaseRepository() {
         })
 
 
+    suspend fun setStatus(side: GateSide, status: GateStatus) {
+        set("gate_${side.id}", "states", mapOf("status" to status))
+    }
+
     suspend fun setStatus(status: GateStatus) {
         set("gate", "states", mapOf("status" to status))
     }
 
-
-    suspend fun getCurrentStatus(): GateStatus =
-        GateStatus.valueOf(getSnapshot("gate", "states").let {
-            it["current"] as String
-        })
-
-
-    suspend fun setCurrentStatus(status: GateStatus) {
-        set("gate", "states", mapOf("current" to status))
-    }
-
-    suspend fun listenStatus(callback: (GateStatus) -> Unit) =
-        listen("gate", "states") { documentSnapshot, firestoreException ->
+    suspend fun listenProgress(callback: (side: GateSide, Int) -> Unit) = listOf(
+        GateSide.Left to listen(
+            "gate${GateSide.Left}",
+            "states"
+        ) { documentSnapshot, firestoreException ->
             if (firestoreException != null) throw firestoreException
             else documentSnapshot?.let {
-                callback(GateStatus.valueOf(it["status"].toString()))
+                callback(GateSide.Left, (it["progress"] as Long?)?.toInt() ?: 0)
             }
-        }
+        },
 
-
-    suspend fun listenProgress(callback: (Int) -> Unit) =
-        listen("gate", "states") { documentSnapshot, firestoreException ->
+        GateSide.Right to listen(
+            "gate${GateSide.Right}",
+            "states"
+        ) { documentSnapshot, firestoreException ->
             if (firestoreException != null) throw firestoreException
             else documentSnapshot?.let {
-                callback((it["progress"] as Long).toInt())
+                callback(GateSide.Right, (it["progress"] as Long?)?.toInt() ?: 0)
             }
         }
-
-
-    suspend fun listenTime(callback: (Long) -> Unit) =
-        listen("gate", "states") { documentSnapshot, firestoreException ->
-            if (firestoreException != null) throw firestoreException
-            else documentSnapshot?.let {
-                callback((it["time"] as Long))
-            }
-        }
+    )
 
 
     suspend fun listenSignal(callback: (Int) -> Unit) =
         listen("gate", "states") { documentSnapshot, firestoreException ->
             if (firestoreException != null) throw firestoreException
             else documentSnapshot?.let {
-                callback((it["signal"] as Long).toInt())
+                callback((it["signal"] as Long?)?.toInt() ?: 0)
             }
         }
 
+    suspend fun listenStatus(callback: (GateSide?, GateStatus) -> Unit)  = listOf(
+            listen("gate_${GateSide.Left.id}", "states") { documentSnapshot, firestoreException ->
+                if (firestoreException != null) throw firestoreException
+                else documentSnapshot?.let {
+                    callback(GateSide.Left, GateStatus.valueOf(it["status"].toString()))
+                }
+            },
+    
+            listen("gate_${GateSide.Right.id}", "states") { documentSnapshot, firestoreException ->
+                if (firestoreException != null) throw firestoreException
+                else documentSnapshot?.let {
+                    callback(GateSide.Right, GateStatus.valueOf(it["status"].toString()))
+                }
+            },
+
+            listen("gate", "states") { documentSnapshot, firestoreException ->
+                if (firestoreException != null) throw firestoreException
+                else documentSnapshot?.let {
+                    callback(null, GateStatus.valueOf(it["status"].toString()))
+                }
+            }
+        )
+
+    suspend fun listenTime(callback: (GateSide, time: Long) -> Unit) {
+        listen("gate_${GateSide.Left.id}", "states") { documentSnapshot, firestoreException ->
+            if (firestoreException != null) throw firestoreException
+            else documentSnapshot?.let {
+                callback(GateSide.Left,(it["time"] as Long?) ?: 0L)
+            }
+        }
+
+        listen("gate_${GateSide.Right.id}", "states") { documentSnapshot, firestoreException ->
+            if (firestoreException != null) throw firestoreException
+            else documentSnapshot?.let {
+                callback(GateSide.Right,(it["time"] as Long?) ?: 0L)
+            }
+        }
+    }
 }
 
 enum class GateStatus {
-    OPENING, CLOSING, NOT_WORKING, OPENED, CLOSED;
-
-    operator fun not() =
-        when (this) {
-            OPENING -> CLOSING
-            CLOSING -> OPENING
-            NOT_WORKING -> NOT_WORKING
-            OPENED -> CLOSED
-            CLOSED -> OPENED
-        }
-
+    OPENING, CLOSING, NOT_WORKING, OPENED, CLOSED, MANUAL_OPENING, MANUAL_CLOSING,
 }
+
+enum class GateSide(val id: String) {
+    Left("left"), Right("right");
+
+    operator fun not() = when (this) {
+        Left -> Right
+        Right -> Left
+    }
+}
+
