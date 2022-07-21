@@ -8,7 +8,7 @@ plugins {
 apply plugin: 'kotlin-android'
 
 android {
-    compileSdkVersion (30)
+    compileSdkVersion (32)
     buildFeatures {
         // Enables Jetpack Compose for this module
         compose true
@@ -16,7 +16,7 @@ android {
     defaultConfig {
         applicationId ("com.zelgius.gateApp")
         minSdkVersion (28)
-        targetSdkVersion (30)
+        targetSdkVersion (32)
         versionCode (1)
         versionName = "1.0"
 
@@ -51,12 +51,12 @@ android {
     }
     kotlinOptions {
         jvmTarget = "1.8"
-        useIR = true
+        //useIR = true
     }
 
     composeOptions {
-        kotlinCompilerVersion "1.4.32"
-        kotlinCompilerExtensionVersion "1.0.0-beta07"
+        //kotlinCompilerVersion "1.4.32"
+        kotlinCompilerExtensionVersion "1.3.0-beta01"
     }
 
     packagingOptions {
@@ -92,13 +92,13 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
 
 dependencies {
 
-    implementation ("androidx.core:core-ktx:1.5.0")
-    implementation ("androidx.appcompat:appcompat:1.3.0")
-    implementation ("androidx.activity:activity-ktx:1.3.0-alpha08")
-    implementation ("androidx.fragment:fragment-ktx:1.4.0-alpha01")
-    implementation ("com.google.android.material:material:1.3.0")
-    androidTestImplementation ("androidx.test.ext:junit:1.1.2")
-    androidTestImplementation ("androidx.test.espresso:espresso-core:3.3.0")
+    implementation ("androidx.core:core-ktx:1.8.0")
+    implementation ("androidx.appcompat:appcompat:1.4.2")
+    implementation ("androidx.activity:activity-ktx:1.6.0-alpha05")
+    implementation ("androidx.fragment:fragment-ktx:1.5.0")
+    implementation ("com.google.android.material:material:1.6.1")
+    androidTestImplementation ("androidx.test.ext:junit:1.1.3")
+    androidTestImplementation ("androidx.test.espresso:espresso-core:3.4.0")
 
     // Test
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.1")
@@ -111,19 +111,19 @@ dependencies {
     androidTestImplementation('de.mannodermaus.junit5:android-test-core:1.2.2')
     androidTestRuntimeOnly('de.mannodermaus.junit5:android-test-runner:1.2.2')
 
-    androidTestImplementation("androidx.test:runner:1.3.0")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.3.0")
+    androidTestImplementation("androidx.test:runner:1.4.0")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.4.0")
     androidTestImplementation ("androidx.arch.core:core-testing:2.1.0")
-    androidTestImplementation ("androidx.test:rules:1.3.0")
+    androidTestImplementation ("androidx.test:rules:1.4.0")
 
 
     //KTX
-    implementation ("androidx.lifecycle:lifecycle-runtime-ktx:2.3.1")
-    implementation ("androidx.lifecycle:lifecycle-livedata-ktx:2.3.1")
+    implementation ("androidx.lifecycle:lifecycle-runtime-ktx:2.5.0")
+    implementation ("androidx.lifecycle:lifecycle-livedata-ktx:2.5.0")
     
     
     //COMPOSE
-    def composeVersion = "1.0.0-beta07"
+    def composeVersion = "1.3.0-alpha01"
     implementation ("androidx.compose.ui:ui:$composeVersion")
     // Tooling support (Previews, etc.)
     implementation( "androidx.compose.ui:ui-tooling:$composeVersion")
@@ -135,15 +135,15 @@ dependencies {
     implementation ("androidx.compose.material:material-icons-core:$composeVersion")
     implementation ("androidx.compose.material:material-icons-extended:$composeVersion")
     // Integration with activities
-    implementation ("androidx.activity:activity-compose:1.3.0-alpha08")
+    implementation ("androidx.activity:activity-compose:1.6.0-alpha05")
     // Integration with ViewModels
-    implementation ("androidx.lifecycle:lifecycle-viewmodel-compose:1.0.0-alpha05")
+    implementation ("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.0-alpha01")
     implementation "androidx.compose.material:material-icons-extended:$composeVersion"
     implementation "androidx.compose.runtime:runtime-livedata:$composeVersion"
 
     //Firebase
-    implementation ("com.google.firebase:firebase-firestore-ktx:23.0.0")
-    implementation ("com.google.firebase:firebase-auth:21.0.1")
+    implementation ("com.google.firebase:firebase-firestore-ktx:24.2.1")
+    implementation ("com.google.firebase:firebase-auth:21.0.6")
     implementation "androidx.core:core-ktx:+"
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 

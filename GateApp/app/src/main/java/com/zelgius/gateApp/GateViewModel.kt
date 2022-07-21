@@ -67,6 +67,7 @@ class GateViewModel(private val app: Application) : AndroidViewModel(app) {
                 when (side) {
                     GateSide.Left -> this@GateViewModel._leftStatus.postValue(status)
                     GateSide.Right -> this@GateViewModel._rightStatus.postValue(status)
+                    else -> {}
                 }
             }
 

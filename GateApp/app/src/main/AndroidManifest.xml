@@ -11,7 +11,8 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.GateApp"
         android:usesCleartextTraffic="true">
-        <activity android:name=".MainActivity">
+        <activity android:name=".MainActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -23,6 +24,7 @@
             android:name=".GateTileService"
             android:label="@string/app_name"
             android:icon="@drawable/ic_gate"
+            android:exported="false"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
