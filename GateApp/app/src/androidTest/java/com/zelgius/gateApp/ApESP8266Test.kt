@@ -8,7 +8,7 @@ import java.net.Socket
 
 class ApES8266Test : TestCase() {
 
-    @Test
+    /*@Test
     fun testConnection() {
         val socket = Socket("192.168.4.1", 1000)
         assertTrue(socket.isConnected)
@@ -19,5 +19,5 @@ class ApES8266Test : TestCase() {
             Thread.sleep(100)
             close()
         }
-    }
+    }*/
 }

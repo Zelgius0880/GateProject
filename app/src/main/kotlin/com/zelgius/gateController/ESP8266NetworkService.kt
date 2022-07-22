@@ -56,6 +56,9 @@ class ESP8266NetworkService(
 
     @Suppress("BlockingMethodInNonBlockingContext")
     override suspend fun start(onDataReceived: (Packet) -> Long) {
+        delay(2000)
+        serial.write("AT+RST\r\n")
+
         while (true) {
             val line = channel.receive()
 

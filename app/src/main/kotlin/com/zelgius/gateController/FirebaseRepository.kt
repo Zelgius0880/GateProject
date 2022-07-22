@@ -19,7 +19,6 @@ import kotlin.coroutines.suspendCoroutine
 interface FirebaseObject {
     var key: String?
     val firebasePath: String
-
 }
 
 open class FirebaseRepository() {

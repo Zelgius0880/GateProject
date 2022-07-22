@@ -1,27 +1,25 @@
 package com.zelgius.gateApp.compose
 
 import android.app.Application
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.rememberScrollableState
-import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import com.zelgius.gateApp.GateSide
-import com.zelgius.gateApp.GateStatus
 import com.zelgius.gateApp.GateViewModel
 import com.zelgius.gateApp.SnackbarMessage
 import com.zelgius.gateApp.compose.buttons.AppTopBar
 import com.zelgius.gateApp.compose.buttons.CardOpenClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectIndexed
-import androidx.compose.foundation.rememberScrollState
 
 val LightColors = lightColors(
     background = Color(0xFFf5f5f5)

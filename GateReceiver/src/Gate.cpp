@@ -1,6 +1,6 @@
 #include "Gate.h"
 
-Gate::Gate(pin_size_t L_EN, pin_size_t R_EN, pin_size_t LPWN, pin_size_t RPWM)
+Gate::Gate(uint8_t L_EN, uint8_t R_EN, uint8_t LPWN, uint8_t RPWM)
 {
     this->L_EN = L_EN;
     this->R_EN = R_EN;

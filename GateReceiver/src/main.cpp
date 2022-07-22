@@ -1,4 +1,5 @@
 #include "main.h"
+#include <SoftwareSerial.h>
 uint16_t setupCmdIndex = 0;
 int cmdResult = 0;
 // 0 -> NA
@@ -46,72 +47,22 @@ void reset()
   signalSend = 0;
 }
 
+SoftwareSerial mySerial(2, 3); // RX, TX
 void setup()
 {
   Serial.begin(115200); // Begin Serial at 2400 baud;
-
-  Serial1.setTimeout(10000);
-  Serial1.begin(115200); // Begin Serial at 2400 baud;
-
-  pinMode(RED, OUTPUT);
-  pinMode(GREEN, OUTPUT);
-
-  reset();
-
-  pinMode(LED_BUILTIN, OUTPUT);
-
-  signalSend = millis();
+  mySerial.begin(9600);
+  Serial.write("AT+RST\r\n");
 }
 
 void loop()
 {
-  char buffer[128];
-  if (Serial1.available() > 0)
-  {
+  if(Serial.available() > 0)
+    Serial.write(Serial.read());
+    else 
+  Serial.write("AT+RST\r\n");
 
-    memset(buffer, 0, 128);
-    uint16_t size = Serial1.readBytesUntil('\n', buffer, 128);
-    buffer[size] = 0;
-    handleResult(buffer, size);
-  }
-
-  if (setupCmdIndex < SETUP_CMD_LEGTH) // SETUP SECTION
-  {
-    if (cmdResult == 1)
-    {
-      setupCmdIndex++;
-      if (setupCmdIndex < SETUP_CMD_LEGTH)
-      {
-        Serial1.write(SETUP_CMD[setupCmdIndex]);
-        cmdResult = 0;
-      }
-    }
-    else if (cmdResult == 2)
-    {
-      Serial.print("Unmanaged error. Reset... ");
-      setupCmdIndex = 0;
-      cmdResult = 1;
-      Serial1.write("AT+RST\r\n");
-    }
-  }
-
-  //In case of connection reset -> resend HELLO packet
-  else if (cmdResult == 1 && !helloSend)
-  {
-    connected = true;
-    cmdResult = 0;
-    send("[0;0]\r\n", strlen("[0;0]\r\n"));
-
-    setConnected();
-  }
-
-  else if (helloSend && connected && (signalSend == 0 || millis() - signalSend > 5 * 60 * 1000))
-  {
-    signalSend = millis();
-    delay(1000);
-
-    Serial1.write(CWLAP_CMD.c_str());
-  }
+delay(5000);
 }
 
 void handleResult(char *s, uint16_t size)

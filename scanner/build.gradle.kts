@@ -12,7 +12,8 @@ plugins {
     id("com.github.johnrengelman.shadow")
 }
 
-group = "com.zelgius.gateController"
+val mainPackage = "com.zelgius.gate.scanner"
+group = mainPackage
 version = "1.0-SNAPSHOT"
 
 /*
@@ -27,12 +28,9 @@ repositories {
     maven(url = "https://jitpack.io")
 }
 
-val mainPackage = "com.zelgius.gateController"
-group = mainPackage
-
 
 var raspberry = remotes.create("raspberry") {
-    host = "169.254.36.66"
+    host = "192.168.1.209"
     user = "pi"
     password = getProps("password")
 }
@@ -60,8 +58,8 @@ tasks {
                 attributes(mapOf("Main-Class" to "$mainPackage.MainKt"))
             }
         }
-        archiveVersion .set("1.1-SNAPSHOT")
-        archiveBaseName.set("GateController")
+        archiveVersion .set("1.0-SNAPSHOT")
+        archiveBaseName.set("Scanner")
         mergeServiceFiles()
 
         jarFile = this
@@ -84,7 +82,6 @@ tasks.create("deploy") {
                 }
 
                 logger.lifecycle("Deploying ...")
-                put( file( getProps("firebase_admin_file")), "/home/pi/")
                 put(archive, "/home/pi/")
                 logger.lifecycle(execute("sudo pkill -f ${archive.name}"))
                 logger.lifecycle(execute("chmod +x ${archive.name}"))
@@ -105,8 +102,7 @@ tasks.create("copy") {
                     logger.error(e.message)
                 }
 
-                put( file( getProps("firebase_admin_file")), "/home/pi/")
-                put(archive, "/home/pi/")
+               put(archive, "/home/pi/")
                 logger.lifecycle(execute("sudo pkill -f ${archive.name}"))
                 logger.lifecycle(execute("chmod +x ${archive.name}"))
             }

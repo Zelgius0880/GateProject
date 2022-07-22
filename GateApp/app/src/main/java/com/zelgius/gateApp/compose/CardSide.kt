@@ -1,7 +1,6 @@
 package com.zelgius.gateApp.compose
 
 import android.app.Application
-import android.util.Log
 import android.view.MotionEvent
 import androidx.compose.animation.Animatable
 import androidx.compose.animation.Crossfade
@@ -19,6 +18,7 @@ import androidx.compose.material.icons.twotone.Settings
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.input.pointer.pointerInteropFilter
@@ -264,6 +264,7 @@ fun ManualOpening(
     }
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun PressButton(
     text: String,
