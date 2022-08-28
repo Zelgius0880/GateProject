@@ -1,14 +1,9 @@
-import org.hidetake.groovy.ssh.core.RunHandler
-import org.hidetake.groovy.ssh.session.SessionHandler
-import org.hidetake.groovy.ssh.core.Remote
-import org.hidetake.groovy.ssh.core.Service
 import java.util.Properties
 import java.io.FileInputStream
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 plugins {
     kotlin("jvm")
-    id("org.hidetake.ssh") version "2.10.1"
     id("com.github.johnrengelman.shadow")
 }
 
@@ -31,23 +26,31 @@ val mainPackage = "com.zelgius.gateController"
 group = mainPackage
 
 
-var raspberry = remotes.create("raspberry") {
-    host = "169.254.36.66"
-    user = "pi"
+var raspberry = Remote(
+    host = "192.168.1.155",
+    user = "pi",
     password = getProps("password")
-}
+)
 
+val pi4jVersion = "2.1.1"
+val slf4jVersion = "1.7.36"
 dependencies {
     implementation(kotlin("stdlib"))
-    implementation("com.pi4j:pi4j-core:1.2")
-    implementation("com.github.mhashim6:Pi4K:0.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.4")
+
+    implementation("com.pi4j:pi4j-core:$pi4jVersion")
+    implementation("com.pi4j:pi4j-plugin-raspberrypi:$pi4jVersion")
+    implementation("com.pi4j:pi4j-plugin-pigpio:$pi4jVersion")
+
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
     testImplementation(kotlin("test-junit5"))
-    implementation("org.junit.jupiter:junit-jupiter:5.6.2")
+    implementation("org.junit.jupiter:junit-jupiter:5.9.0")
 
     //Firebase
-    implementation("com.google.firebase:firebase-admin:7.1.0")
-    implementation("org.apache.logging.log4j:log4j-slf4j-impl:2.11.2")
+    implementation("com.google.firebase:firebase-admin:9.0.0")
+    implementation("org.apache.logging.log4j:log4j-slf4j-impl:2.18.0")
+
+    implementation("org.slf4j:slf4j-api:$slf4jVersion")
+    implementation("org.slf4j:slf4j-simple:$slf4jVersion")
 }
 
 
@@ -60,7 +63,7 @@ tasks {
                 attributes(mapOf("Main-Class" to "$mainPackage.MainKt"))
             }
         }
-        archiveVersion .set("1.1-SNAPSHOT")
+        archiveVersion.set("1.2-SNAPSHOT")
         archiveBaseName.set("GateController")
         mergeServiceFiles()
 
@@ -72,45 +75,36 @@ tasks {
 tasks.create("deploy") {
     logging.captureStandardOutput(LogLevel.INFO)
     doLast {
-        ssh.runSessions {
-            session(raspberry) {
-                val archive = jarFile.archiveFile.get().asFile
-                val config = Properties()
-                config["StrictHostKeyChecking"] = "no"
-                try {
-                    execute("sudo rm ${archive.name}")
-                } catch (e: Exception) {
-                    logger.error(e.message)
-                }
+        val archive = jarFile.archiveFile.get().asFile
 
-                logger.lifecycle("Deploying ...")
-                put( file( getProps("firebase_admin_file")), "/home/pi/")
-                put(archive, "/home/pi/")
-                logger.lifecycle(execute("sudo pkill -f ${archive.name}"))
-                logger.lifecycle(execute("chmod +x ${archive.name}"))
-                logger.lifecycle(execute("sudo java -jar ${archive.name}"))
-            }
+        try {
+            ssh("sudo rm ${archive.name}",  remote = raspberry)
+        } catch (e: Exception) {
+            logger.error(e.message)
         }
+
+        logger.lifecycle("Deploying ...")
+        scp(file(getProps("firebase_admin_file")), "/home/pi/",  remote = raspberry)
+        scp(archive, "/home/pi/",  remote = raspberry)
+        ssh("sudo pkill -f ${archive.name}",  remote = raspberry)
+        ssh("chmod +x ${archive.name}", remote =  raspberry)
+        ssh("sudo java -jar ${archive.name}",  remote = raspberry)
     }
 }
 
 tasks.create("copy") {
     doLast {
-        ssh.runSessions {
-            session(raspberry) {
-                val archive = jarFile.archiveFile.get().asFile
-                try {
-                    execute("sudo rm ${archive.name}")
-                } catch (e: Exception) {
-                    logger.error(e.message)
-                }
-
-                put( file( getProps("firebase_admin_file")), "/home/pi/")
-                put(archive, "/home/pi/")
-                logger.lifecycle(execute("sudo pkill -f ${archive.name}"))
-                logger.lifecycle(execute("chmod +x ${archive.name}"))
-            }
+        val archive = jarFile.archiveFile.get().asFile
+        try {
+            ssh("sudo rm ${archive.name}",  remote = raspberry)
+        } catch (e: Exception) {
+            logger.error(e.message)
         }
+
+        scp(file(getProps("firebase_admin_file")), "/home/pi/", remote = raspberry)
+        scp(archive, "/home/pi/",  remote = raspberry)
+        ssh("sudo pkill -f ${archive.name}",  remote = raspberry)
+        ssh("chmod +x ${archive.name}",  remote = raspberry)
     }
 }
 
@@ -123,15 +117,6 @@ tasks {
 tasks.withType(Test::class.java) {
     useJUnitPlatform()
 }
-
-fun Service.runSessions(action: RunHandler.() -> Unit) =
-    run(delegateClosureOf(action))
-
-fun RunHandler.session(vararg remotes: Remote, action: SessionHandler.() -> Unit) =
-    session(*remotes, delegateClosureOf(action))
-
-fun SessionHandler.put(from: Any, into: Any) =
-    put(hashMapOf("from" to from, "into" to into))
 
 
 fun getProps(propName: String): String {

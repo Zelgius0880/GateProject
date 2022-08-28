@@ -9,7 +9,8 @@
     <string name="connect">Se connecter</string>
     <string name="disconnect">Se déconnecter</string>
     <string name="gate_signal">Signal</string>
-    <string name="progression">Progression</string>
+    <string name="favorite_tooltip">Le côté coché s\'ouvrira en premier et se fermera en dernier</string>
+    <string name="working">En mouvement</string>
     <string name="not_working">A l\'arrêt</string>
     <string name="opening">Overture</string>
     <string name="closing">Fermeture</string>
@@ -18,9 +19,6 @@
     <string name="close_a_bit">Fermer un peu</string>
     <string name="open_a_bit">Ouvrir un peu</string>
     <string name="action">Action</string>
-    <string name="configuration">Configuration</string>
-    <string name="need_to_be_connected">La connexion au wifi de la barrière est nécessaire</string>
-    <string name="gate_not_closed">La barrière a besoin d\'être fermée pour commencer la configuration</string>
     <string name="it_is_closed">Elle est fermée</string>
     <string name="stop">Stop</string>
     <string name="start">Commencer</string>
@@ -33,6 +31,10 @@
     <string name="channel_description">Affiche la progression de la barrière</string>
     <string name="left_side">Côté Gauche</string>
     <string name="right_side">Côté Droit</string>
+    <string name="right">droit</string>
+    <string name="left">gauche</string>
+    <string name="opening_side">Ouverture</string>
+    <string name="closing_side">Fermeture</string>
     <string name="manual_opening">Ouverture Manuelle</string>
     <string name="settings">Configuration</string>
     <string name="movement_duration">"L'ouverture/fermeture a duré %d ms "</string>

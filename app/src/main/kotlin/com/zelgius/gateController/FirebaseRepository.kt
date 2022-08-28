@@ -9,6 +9,7 @@ import com.google.cloud.firestore.annotation.IgnoreExtraProperties
 import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseOptions
 import com.google.firebase.cloud.FirestoreClient
+import kotlinx.coroutines.suspendCancellableCoroutine
 import java.io.FileInputStream
 import java.util.concurrent.Executors
 import kotlin.coroutines.resume
@@ -37,7 +38,7 @@ open class FirebaseRepository() {
     protected val db = FirestoreClient.getFirestore(FirebaseApp.getInstance())
 
     suspend fun getSnapshot(key: String, path: String): DocumentSnapshot {
-        return suspendCoroutine { cont ->
+        return suspendCancellableCoroutine { cont ->
             ApiFutures.addCallback(
                 db.collection(path)
                     .document(key)
@@ -70,7 +71,7 @@ open class FirebaseRepository() {
     }
 
     suspend fun set(key: String, path: String, map: Map<String, Any>, options: SetOptions = SetOptions.merge()) =
-        suspendCoroutine<FirestoreException?> {
+        suspendCancellableCoroutine<FirestoreException?> {
             println(map)
             ApiFutures.addCallback(
                 db.collection(path).document(key).set(map, options),

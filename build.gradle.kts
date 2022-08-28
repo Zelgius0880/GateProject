@@ -3,9 +3,10 @@
 buildscript {
     repositories {
         google()
-        jcenter()
+        mavenCentral()
+        maven(url = "https://plugins.gradle.org/m2/")
     }
-    val kotlinVersion =  "1.4.21"
+    val kotlinVersion =  "1.7.10"
 
     dependencies {
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")

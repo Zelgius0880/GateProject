@@ -1,17 +1,29 @@
 package com.zelgius.gateApp
 
-import android.app.Application
+import android.annotation.SuppressLint
 import android.content.Context
 import androidx.core.content.edit
-import androidx.lifecycle.*
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
-import java.time.LocalDateTime
 import java.util.*
+import javax.inject.Inject
 
+@HiltViewModel
+@SuppressLint("StaticFieldLeak") // as it's the application context, there is no leak using it in a viewModel
+class GateViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val _gateRepository: GateRepository? = null // Compose previous purpose
+) : ViewModel() {
+    private val gateRepository: GateRepository
+        get() = _gateRepository!!
 
-class GateViewModel(private val app: Application) : AndroidViewModel(app) {
     companion object {
         const val FAVORITE_SIDE = "FAVORITE_SIDE"
     }
@@ -19,7 +31,7 @@ class GateViewModel(private val app: Application) : AndroidViewModel(app) {
     private val messageChannel = Channel<SnackbarMessage>()
     val messageFlow = messageChannel.receiveAsFlow()
 
-    private val sharedPreferences = app.getSharedPreferences("Default", Context.MODE_PRIVATE)
+    private val sharedPreferences = context.getSharedPreferences("Default", Context.MODE_PRIVATE)
 
     private val _timeRight = MutableLiveData(0L)
     val timeRight: LiveData<Long>
@@ -29,10 +41,6 @@ class GateViewModel(private val app: Application) : AndroidViewModel(app) {
     val timeLeft: LiveData<Long>
         get() = _timeLeft
 
-    private val _status = MutableLiveData(GateStatus.NOT_WORKING)
-    val status: LiveData<GateStatus>
-        get() = _status
-
     private val _leftStatus = MutableLiveData(GateStatus.NOT_WORKING)
     val leftStatus: LiveData<GateStatus>
         get() = _leftStatus
@@ -41,20 +49,17 @@ class GateViewModel(private val app: Application) : AndroidViewModel(app) {
     val rightStatus: LiveData<GateStatus>
         get() = _rightStatus
 
-    private val _signal = MutableLiveData(-1)
-    val signal: LiveData<Int>
-        get() = _signal
+    private val _rightProgress = MutableLiveData<Int?>()
+    val rightProgress: LiveData<Int?>
+        get() = _rightProgress
 
-    private val _favorite = MutableLiveData<GateSide?>(null)
-    val favorite: LiveData<GateSide?>
+    private val _leftProgress = MutableLiveData<Int?>()
+    val leftProgress: LiveData<Int?>
+        get() = _leftProgress
+
+    private val _favorite = MutableLiveData(GateSide.Left)
+    val favorite: LiveData<GateSide>
         get() = _favorite
-
-    private var _gateRepository: GateRepository? = null
-    private val gateRepository: GateRepository
-        get() {
-            if (_gateRepository == null) _gateRepository = GateRepository()
-            return _gateRepository!!
-        }
 
     private var manualOpeningLeft = 0L
     private var manualOpeningRight = 0L
@@ -62,62 +67,45 @@ class GateViewModel(private val app: Application) : AndroidViewModel(app) {
     init {
         viewModelScope.launch {
 
-            gateRepository.listenStatus { side, status ->
-                _status.postValue(status)
-                when (side) {
-                    GateSide.Left -> this@GateViewModel._leftStatus.postValue(status)
-                    GateSide.Right -> this@GateViewModel._rightStatus.postValue(status)
-                    else -> {} //nothing
-                }
-            }
+            _gateRepository?.listenStatus(GateSide.Left) { status -> _leftStatus.postValue(status) }
+            _gateRepository?.listenStatus(GateSide.Right) { status -> _rightStatus.postValue(status) }
 
-            gateRepository.listenTime { side, time ->
+            _gateRepository?.listenProgress(GateSide.Left) { _leftProgress.postValue(it) }
+            _gateRepository?.listenProgress(GateSide.Right) { _rightProgress.postValue(it) }
+
+            _gateRepository?.listenTime { side, time ->
                 when (side) {
                     GateSide.Left -> _timeLeft.postValue(time)
                     GateSide.Right -> _timeRight.postValue(time)
                 }
             }
 
-            gateRepository.listenSignal {
-                _signal.postValue(it)
-            }
-
             _favorite.value = sharedPreferences.getString(
                 FAVORITE_SIDE, null
             ).let {
-                GateSide.values().find { side -> side.id == it }
+                GateSide.values().find { side -> side.id == it }?: GateSide.Left
             }
         }
     }
 
     fun openGate() {
         viewModelScope.launch {
-            gateRepository.setStatus(GateStatus.OPENING)
+            GateOpeningService.startForeground(context, Direction.Open)
         }
     }
 
     fun closeGate() {
         viewModelScope.launch {
-            gateRepository.setStatus(GateStatus.CLOSING)
+            GateOpeningService.startForeground(context, Direction.Close)
         }
     }
 
     fun toggleFavorite(side: GateSide) {
         viewModelScope.launch {
-            if (_favorite.value != side) {
-
-                sharedPreferences.edit {
-                    putString(FAVORITE_SIDE, side.id)
-                }
-                _favorite.value = side
-            } else {
-                _favorite.value = null
-
-                sharedPreferences.edit {
-                    putString(FAVORITE_SIDE, null)
-                }
+            sharedPreferences.edit {
+                putString(FAVORITE_SIDE, side.id)
             }
-
+            _favorite.value = side
         }
     }
 
@@ -151,9 +139,9 @@ class GateViewModel(private val app: Application) : AndroidViewModel(app) {
                 GateSide.Right -> manualOpeningRight
             }
             val message = SnackbarMessage(
-                app.getString(R.string.movement_duration, time),
+                context.getString(R.string.movement_duration, time),
                 SnackbarMessage.Action(
-                    app.getString(R.string.save_time),
+                    context.getString(R.string.save_time),
                     SaveTimeAction(gateRepository, side, time)
                 )
             )

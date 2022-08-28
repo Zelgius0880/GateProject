@@ -91,7 +91,7 @@ open class SerialIO(protected val serial: Serial) {
         withTimeout(3000L) {
             var s = ""
 
-            val handler = CoroutineExceptionHandler { context, exception ->
+            val handler = CoroutineExceptionHandler { _, exception ->
                 throw exception
             }
             GlobalScope.launch(handler) {

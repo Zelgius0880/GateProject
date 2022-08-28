@@ -1,31 +1,26 @@
 package com.zelgius.gateController
 
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import java.lang.Exception
 
 class ManualGateOpening(
-    networkService: NetworkService,
-    side: GateSide,
+    gate: Gate,
     override var isOpen: Boolean
-) : GateWork(networkService, side) {
+) : GateWork(gate) {
 
     override suspend fun run() :GateStatus{
+        if(isOpen) gate.open() else gate.close()
         while (!stop) {
-            val milli1 = System.currentTimeMillis()
-            stop = stop || !send()
-
-            val milli2 = System.currentTimeMillis()
-
-            if (milli2 - milli1 < PACKET_TIME)
-                delay(PACKET_TIME - (milli2 - milli1))
+            delay(1)
         }
+
+        gate.stop()
+        println("ManualGateOpening Stopped ${gate.side}")
 
         return GateStatus.NOT_WORKING
     }
 }
 
 enum class GateSide(val id: String) {
-    Left("left"), Right("right")
+    Left("left"), Right("right");
+    operator fun not(): GateSide = if(this == Left) Right else Left
 }

@@ -1,16 +1,19 @@
 package com.zelgius.gateController
 
+import com.pi4j.Pi4J
 import java.io.File
 
-/*
-const int MAX_VAL = -20; // define maximum signal strength (in dBm)
-const int MIN_VAL = -80; // define minimum signal strength (in dBm)
-
-int strength = map(rssi, MIN_VAL, MAX_VAL, 0, 11);
-
- */
 
 fun main() {
     println(File("").absolutePath)
-    GateController().run()
+
+    val controller = GateController()
+    try {
+        controller.run()
+    } catch (e: Exception) {
+        e.printStackTrace()
+    } finally {
+        controller.shutdown()
+    }
+
 }

@@ -33,29 +33,27 @@ fun OpenButton(
 ) {
 
     if (status != GateStatus.OPENING)
-        OutlinedButton(
+        Button(
             onClick = onClick,
             enabled = status != GateStatus.OPENED,
             modifier = modifier,
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colors.primaryVariant)
+            colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.primaryVariant),
         ) {
 
             Text(
-                text = stringResource(id = R.string.open).toUpperCase(Locale.ROOT),
+                text = stringResource(id = R.string.open).uppercase(),
             )
 
         }
     else
         TextButton(
-            onClick = onStop,/*{
-                wifiViewModel.stop()
-            }*/
+            onClick = onStop,
             modifier = modifier,
         ) {
 
             Text(
-                text = stringResource(id = R.string.stop).toUpperCase(Locale.ROOT),
-                color = MaterialTheme.colors.primary
+                text = stringResource(id = R.string.stop).uppercase(),
+                color = MaterialTheme.colors.primaryVariant
             )
 
         }
@@ -70,15 +68,15 @@ fun CloseButton(
     onStop: () -> Unit
 ) {
     if (status != GateStatus.CLOSING)
-        OutlinedButton(
+        Button(
             onClick = onClick,
             enabled = status != GateStatus.CLOSED,
             modifier = modifier,
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colors.secondaryVariant)
+            colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.secondaryVariant)
         ) {
 
             Text(
-                text = stringResource(id = R.string.close).toUpperCase(Locale.ROOT),
+                text = stringResource(id = R.string.close).uppercase(),
             )
         }
     else
@@ -88,7 +86,7 @@ fun CloseButton(
         ) {
 
             Text(
-                text = stringResource(id = R.string.stop).toUpperCase(Locale.ROOT),
+                text = stringResource(id = R.string.stop).uppercase(),
                 color = MaterialTheme.colors.secondaryVariant
             )
         }
@@ -97,23 +95,24 @@ fun CloseButton(
 @Composable
 fun CardOpenClose(
     modifier: Modifier = Modifier,
+    isOpened: Boolean? = null,
     onOpen: () -> Unit,
     onClose: () -> Unit,
-    onStop: () -> Unit
+    onStop: () -> Unit,
 ) {
     Card(modifier = Modifier.padding(8.dp) then modifier) {
         Column(modifier = Modifier.padding(8.dp) then Modifier.fillMaxWidth()) {
             Row(modifier = Modifier.padding(8.dp) then Modifier.fillMaxWidth()) {
 
                 OpenButton(
-                    status = GateStatus.NOT_WORKING,
+                    status = if(isOpened == true) GateStatus.OPENED else GateStatus.NOT_WORKING,
                     modifier = Modifier.padding(end = 4.dp) then Modifier.weight(1f),
                     onClick = onOpen,
                     onStop = onStop
                 )
 
                 CloseButton(
-                    status = GateStatus.NOT_WORKING,
+                    status = if(isOpened == false) GateStatus.CLOSED else GateStatus.NOT_WORKING,
                     modifier = Modifier.padding(start = 4.dp) then Modifier.weight(1f),
                     onClick = onClose,
                     onStop = onStop

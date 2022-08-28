@@ -1,24 +1,17 @@
 package com.zelgius.gateController
 
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 
 class GateOpening(
-    networkService: NetworkService,
-    side: GateSide,
+    gate: Gate,
     private val repository: GateRepository,
-) : GateWork(networkService, side) {
-
-    private var progress: Int = 0
-    private var movingTime: Long = 0
-    private var current: GateStatus = GateStatus.NOT_WORKING
-    private var status: GateStatus = GateStatus.NOT_WORKING
-
+) : GateWork(gate) {
     override suspend fun run(): GateStatus {
-        initMovement()
+        val state = initMovement(state())
 
+        var (progress, movingTime) = state
         val initProgress = progress
 
         progress = initProgress
@@ -27,24 +20,22 @@ class GateOpening(
         repository.setProgress(side, progress)
         repository.setCurrentStatus(side, if (isOpen) GateStatus.OPENING else GateStatus.CLOSING)
 
-        val startingTime = System.currentTimeMillis()
+        if(isOpen) gate.open() else gate.close()
+        val startingTime = System.currentTimeMillis() - time
+        var oldProgress = progress
         while (time < movingTime && !stop && progress < 100) {
-            val milli1 = System.currentTimeMillis()
-            stop = stop || !send()
-            time += PACKET_TIME
+            time = System.currentTimeMillis() - startingTime
+
             progress = (100f * time / movingTime).roundToInt()
-            repository.setProgress(side, progress)
+            if(progress != oldProgress) {
+                repository.setProgress(side, progress)
+                oldProgress = progress
+            }
 
-            val milli2 = System.currentTimeMillis()
-
-            if (milli2 - milli1 < PACKET_TIME)
-                delay(PACKET_TIME - (milli2 - milli1))
+            delay(1)
         }
 
-        println("Moving during ${System.currentTimeMillis() - startingTime}/$movingTime ms")
-        if (time > movingTime) {
-            send()
-        }
+        gate.stop()
 
         if (time >= movingTime || progress >= 100) {
             repository.setProgress(side, 100)
@@ -55,32 +46,31 @@ class GateOpening(
     }
 
 
-    private suspend fun initMovement() {
-        movingTime = repository.getTime(side)
-        current = repository.getCurrentStatus(side)
-        progress = repository.getProgress(side)
-        status = repository.getStatus(side)
+    private suspend fun initMovement(state: OpeningState): OpeningState {
+        var (progress, _, current, status) = state
 
         if (progress < 100) {
             progress = when {
                 current == GateStatus.OPENING && status == GateStatus.CLOSING -> {
                     isOpen = false
-                    //100 - progress
-                    0
+                    100 - progress
                 }
+
                 current == GateStatus.OPENING && status == GateStatus.OPENING -> {
                     isOpen = true
                     progress
                 }
+
                 current == GateStatus.CLOSING && status == GateStatus.OPENING -> {
                     isOpen = true
-                    //100 - progress
-                    0
+                    100 - progress
                 }
+
                 current == GateStatus.CLOSING && status == GateStatus.CLOSING -> {
                     isOpen = false
                     progress
                 }
+
                 else -> {
                     isOpen = !(current == GateStatus.OPENED || current == GateStatus.OPENING)
                     progress
@@ -99,5 +89,22 @@ class GateOpening(
         }
 
         repository.setStatus(side, if (!isOpen) GateStatus.CLOSING else GateStatus.OPENING)
+
+        return state.copy(progress = progress)
+    }
+    suspend fun state(): OpeningState {
+        return OpeningState(
+            movingTime = repository.getTime(side),
+            current = repository.getCurrentStatus(side),
+            progress = repository.getProgress(side),
+            status = repository.getStatus(side),
+        )
     }
 }
+
+data class OpeningState(
+    val progress: Int = 0,
+    val movingTime: Long = 0,
+    val current: GateStatus = GateStatus.NOT_WORKING,
+    val status: GateStatus = GateStatus.NOT_WORKING,
+)

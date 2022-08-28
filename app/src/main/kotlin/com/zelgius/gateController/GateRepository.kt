@@ -69,6 +69,21 @@ class GateRepository : FirebaseRepository() {
                 }
             }
     }
+
+    fun listenStatus(side: GateSide, callback: (GateStatus) -> Unit) {
+        db.collection("states")
+            .document("gate_${side.id}")
+            .addSnapshotListener { documentSnapshot, firebaseFirestoreException ->
+                if(firebaseFirestoreException != null) throw firebaseFirestoreException
+                if(documentSnapshot != null) {
+                    (documentSnapshot["status"] as String?)?.let { s ->
+                        GateStatus.values().find { it.name == s }
+                    }?.let {
+                        callback(it)
+                    }
+                }
+            }
+    }
 }
 
 enum class GateStatus {
