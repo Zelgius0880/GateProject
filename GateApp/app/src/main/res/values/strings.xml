@@ -38,4 +38,5 @@
     <string name="movement_duration">Movement last %d ms</string>
     <string name="save_time">Save time</string>
     <string name="favorite_tooltip">The side checked will be opened first and closed last</string>
+    <string name="it_is_now">It is now</string>
 </resources>

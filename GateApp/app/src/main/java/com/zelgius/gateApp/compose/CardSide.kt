@@ -40,6 +40,7 @@ import com.zelgius.gateApp.GateStatus
 import com.zelgius.gateApp.GateViewModel
 import com.zelgius.gateApp.R
 import com.zelgius.gateApp.compose.buttons.CloseButton
+import com.zelgius.gateApp.compose.buttons.ForceStatusButton
 import com.zelgius.gateApp.compose.buttons.OpenButton
 import com.zelgius.gateApp.compose.buttons.Time
 
@@ -80,6 +81,7 @@ fun CardSide(side: GateSide, viewModel: GateViewModel, modifier: Modifier = Modi
 
             Settings(time = time,
                 isFavorite = favorite == side,
+                status = status.value,
                 onUpdate = {
                     viewModel.setMovingTime(side, it)
                 },
@@ -97,6 +99,9 @@ fun CardSide(side: GateSide, viewModel: GateViewModel, modifier: Modifier = Modi
                         viewModel.stopManual(side)
                     else
                         viewModel.manualCloseGate(side)
+                },
+                onStatusChanged = {
+                    viewModel.setStatus(side, it)
                 }
             )
 
@@ -202,10 +207,12 @@ fun CardSidePreview() {
 fun Settings(
     time: Long,
     isFavorite: Boolean,
+    status: GateStatus,
     onUpdate: (time: Long) -> Unit,
     onFavoriteClicked: () -> Unit,
     openPressChanged: (isPressed: Boolean) -> Unit,
     closePressChanged: (isPressed: Boolean) -> Unit,
+    onStatusChanged: (GateStatus) -> Unit,
     isOpened: Boolean = false
 ) {
     var isPanelOpened by remember { mutableStateOf(isOpened) }
@@ -292,6 +299,10 @@ fun Settings(
 
         if (isPanelOpened) {
             Time(time = time, onTimeUpdated = onUpdate)
+            Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically){
+                Text(stringResource(id = R.string.it_is_now))
+                ForceStatusButton(currentStatus = status, onStateClicked = onStatusChanged, modifier = Modifier.padding(start = 8.dp))
+            }
             ManualOpening(
                 openPressChanged = openPressChanged,
                 closePressChanged = closePressChanged
@@ -363,7 +374,6 @@ fun PressButton(
         style = MaterialTheme.typography.button.copy(color = textColor.value),
         textAlign = TextAlign.Center,
         modifier = modifier
-
             .pointerInteropFilter {
                 when (it.action) {
                     MotionEvent.ACTION_DOWN -> {
@@ -371,11 +381,13 @@ fun PressButton(
                         pressed = true
                         true
                     }
+
                     MotionEvent.ACTION_UP -> {
                         pressed = false
                         onPressChanged(false)
                         true
                     }
+
                     else -> false
                 }
             }
@@ -395,10 +407,13 @@ fun SettingsPreview() {
         500,
         isOpened = true,
         isFavorite = false,
+        status = GateStatus.OPENED,
         onUpdate = {},
         onFavoriteClicked = {},
         openPressChanged = {},
-        closePressChanged = {})
+        closePressChanged = {},
+        onStatusChanged = {}
+    )
 }
 
 

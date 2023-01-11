@@ -39,4 +39,5 @@
     <string name="settings">Configuration</string>
     <string name="movement_duration">"L'ouverture/fermeture a duré %d ms "</string>
     <string name="save_time">Enregistrer</string>
+    <string name="it_is_now">La barrière est</string>
 </resources>

@@ -22,6 +22,13 @@ class GateRepository : FirebaseRepository() {
         set("gate_${side.id}", "states", mapOf("status" to status))
     }
 
+    suspend fun setCurrentStatus(side: GateSide, status: GateStatus) {
+        set("gate_${side.id}", "states", mapOf("current" to status))
+    }
+
+    suspend fun setProgress(side: GateSide, progress: Int) {
+        set("gate_${side.id}", "states", mapOf("progress" to progress))
+    }
 
     suspend fun listenStatus(side: GateSide, callback: (GateStatus) -> Unit) = listOf(
         listen("gate_${side.id}", "states") { documentSnapshot, firestoreException ->

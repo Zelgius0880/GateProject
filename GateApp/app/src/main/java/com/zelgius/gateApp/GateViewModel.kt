@@ -174,6 +174,14 @@ class GateViewModel @Inject constructor(
         }
     }
 
+    fun setStatus(side: GateSide, status: GateStatus){
+        viewModelScope.launch {
+            gateRepository.setStatus(side, status)
+            gateRepository.setCurrentStatus(side, status)
+            gateRepository.setProgress(side, 100)
+        }
+    }
+
     fun setMovingTime(side: GateSide, time: Long) {
         viewModelScope.launch {
             gateRepository.setTime(side, time)
