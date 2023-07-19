@@ -3,6 +3,8 @@ package com.zelgius.gateController
 import com.pi4j.Pi4J
 import com.pi4j.context.Context
 import kotlinx.coroutines.*
+import com.pi4j.io.gpio.digital.DigitalOutput
+import com.pi4j.io.gpio.digital.DigitalState
 
 class GateController() {
 
@@ -19,6 +21,17 @@ class GateController() {
     private val contextLeft = contextRight
     private val gateRight = Gate(contextRight, 17, 12, GateSide.Right)
     private val gateLeft = Gate(contextLeft, 19, 26, GateSide.Left)
+
+    val light = contextRight.create(
+        DigitalOutput.newConfigBuilder(contextRight)
+            .id("light")
+            .name("Light")
+            .address(23)
+            .shutdown(DigitalState.LOW)
+            .initial(DigitalState.LOW)
+            .provider("pigpio-digital-output")
+    )
+
 
     fun run() {
         runBlocking {
@@ -47,6 +60,11 @@ class GateController() {
                 gate = this
                 start()
             }
+        }
+
+        repository.listenLightStatus {
+            if(it) light.high()
+            else light.low()
         }
     }
 

@@ -84,6 +84,19 @@ class GateRepository : FirebaseRepository() {
                 }
             }
     }
+
+    fun listenLightStatus(callback: (Boolean) -> Unit) {
+        db.collection("states")
+            .document("gate_light")
+            .addSnapshotListener { documentSnapshot, firebaseFirestoreException ->
+                if(firebaseFirestoreException != null) throw firebaseFirestoreException
+                if(documentSnapshot != null) {
+                    (documentSnapshot["is_on"] as Boolean?)?.let {
+                        callback(it)
+                    }
+                }
+            }
+    }
 }
 
 enum class GateStatus {
