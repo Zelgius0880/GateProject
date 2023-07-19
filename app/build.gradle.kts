@@ -4,7 +4,7 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 plugins {
     kotlin("jvm")
-    id("com.github.johnrengelman.shadow")
+    id("com.github.johnrengelman.shadow") version "7.0.0"
 }
 
 group = "com.zelgius.gateController"
@@ -27,7 +27,7 @@ group = mainPackage
 
 
 var raspberry = Remote(
-    host = "192.168.1.155",
+    host = "192.168.1.123",
     user = "pi",
     password = getProps("password")
 )

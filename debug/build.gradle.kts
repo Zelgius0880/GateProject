@@ -9,7 +9,7 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 plugins {
     kotlin("jvm")
     id("org.hidetake.ssh") version "2.10.1"
-    id("com.github.johnrengelman.shadow")
+    id("com.github.johnrengelman.shadow") version "7.0.0"
 }
 
 val mainPackage = "com.zelgius.gate.debug"

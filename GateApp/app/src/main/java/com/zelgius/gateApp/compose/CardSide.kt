@@ -190,15 +190,6 @@ private fun GateSideStatus(side: GateSide, statusState: State<GateStatus>) {
     }
 }
 
-@Composable
-@Preview
-fun CardSidePreview() {
-    MaterialTheme(colors = LightColors) {
-        CardSide(side = GateSide.Left, viewModel = GateViewModel(LocalContext.current))
-    }
-}
-
-
 /**
  *
  */

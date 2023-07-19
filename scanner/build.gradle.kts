@@ -1,15 +1,15 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import org.hidetake.groovy.ssh.core.RunHandler
 import org.hidetake.groovy.ssh.session.SessionHandler
 import org.hidetake.groovy.ssh.core.Remote
 import org.hidetake.groovy.ssh.core.Service
 import java.util.Properties
 import java.io.FileInputStream
-import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 plugins {
     kotlin("jvm")
     id("org.hidetake.ssh") version "2.10.1"
-    id("com.github.johnrengelman.shadow")
+    id("com.github.johnrengelman.shadow") version "7.0.0"
 }
 
 val mainPackage = "com.zelgius.gate.scanner"

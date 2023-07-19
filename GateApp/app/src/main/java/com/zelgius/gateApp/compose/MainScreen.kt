@@ -12,14 +12,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.zelgius.gateApp.*
 import com.zelgius.gateApp.R
 import com.zelgius.gateApp.compose.buttons.AppTopBar
 import com.zelgius.gateApp.compose.buttons.CardOpenClose
+import com.zelgius.gateApp.compose.buttons.Light
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectIndexed
 
@@ -63,7 +66,8 @@ fun MainScreen(
                         .verticalScroll(
                             rememberScrollState()
                         )
-                        .padding(it)
+                        .padding(it),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
 
                     val statusLeft by viewModel.leftStatus.observeAsState(GateStatus.NOT_WORKING)
@@ -82,6 +86,12 @@ fun MainScreen(
 
                     CardSide(GateSide.Left, viewModel = viewModel)
                     CardSide(GateSide.Right, viewModel = viewModel)
+
+                    val lightIsOn by viewModel.lightIsOn.observeAsState(false)
+                    val lightTime by viewModel.lightTime.observeAsState(initial = 0L)
+                    Light(isOn = lightIsOn, time = lightTime, modifier = Modifier.padding(top = 24.dp, bottom = 24.dp), onTimeSet = {t ->viewModel.setLightTime(t)}) {isOn ->
+                        viewModel.toggleLight(isOn)
+                    }
                 }
             }
         )
@@ -106,10 +116,4 @@ fun Snackbar(flow: Flow<SnackbarMessage>, state: SnackbarHostState) {
             }
         }
     }
-}
-
-@Composable
-@Preview
-fun MainScreenPreview() {
-    MainScreen(viewModel = GateViewModel(Application()))
 }

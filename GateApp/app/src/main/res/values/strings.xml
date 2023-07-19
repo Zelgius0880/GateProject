@@ -39,4 +39,9 @@
     <string name="save_time">Save time</string>
     <string name="favorite_tooltip">The side checked will be opened first and closed last</string>
     <string name="it_is_now">It is now</string>
+    <string name="light_on_time">Light on time</string>
+    <string name="light_on_time_description">The time the light stay on after the gate is opened/closed</string>
+    <string name="dismiss">Dismiss</string>
+    <string name="ok">Ok</string>
+    <string name="textfield_format_error">Invalid format</string>
 </resources>

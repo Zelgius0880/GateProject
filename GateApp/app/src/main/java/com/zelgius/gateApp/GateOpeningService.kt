@@ -9,13 +9,17 @@ import android.os.IBinder
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
+import ca.rmen.sunrisesunset.SunriseSunset
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.last
 import kotlinx.coroutines.flow.single
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import kotlin.time.Duration
 
 
 @AndroidEntryPoint
@@ -29,6 +33,9 @@ class GateOpeningService : Service() {
     companion object {
         var isRunning: Boolean =
             false // it's not very pretty, but it's an easy way to check if it is running. As there is only one instance of the service at once, it should be ok
+
+        const val LATITUDE = 50.13829924386458
+        const val LONGITUDE = 5.2771781296775035
 
         const val DIRECTION_EXTRA = "DIRECTION_EXTRA"
         const val NOTIFICATION_ID = 1
@@ -142,9 +149,19 @@ class GateOpeningService : Service() {
         val gates = if (direction == Direction.Open) favorite to !favorite
         else !favorite to favorite
 
+        if(!SunriseSunset.isDay(LATITUDE, LONGITUDE))
+            gateRepository.setLightStatus(true)
+
         moveSide(gates.first, direction, workingStatus, targetStatus)
         moveSide(gates.second, direction, workingStatus, targetStatus)
 
+        if(!SunriseSunset.isDay(LATITUDE, LONGITUDE)){
+            val (listener, timeFlow) = gateRepository.flowLightTime()
+            val time = timeFlow.last()
+            delay(time * 1000)
+            listener?.remove()
+            gateRepository.setLightStatus(false)
+        }
     }
 
     private suspend fun moveSide(

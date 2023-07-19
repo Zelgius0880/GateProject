@@ -40,4 +40,9 @@
     <string name="movement_duration">"L'ouverture/fermeture a duré %d ms "</string>
     <string name="save_time">Enregistrer</string>
     <string name="it_is_now">La barrière est</string>
+    <string name="light_on_time">Temps allumé</string>
+    <string name="light_on_time_description">Le temps que la lampe reste allumée après l\'ouverture/fermeture</string>
+    <string name="dismiss">Annuler</string>
+    <string name="ok">Ok</string>
+    <string name="textfield_format_error">Format invalide</string>
 </resources>

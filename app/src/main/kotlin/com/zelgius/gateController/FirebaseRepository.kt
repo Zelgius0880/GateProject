@@ -24,11 +24,11 @@ interface FirebaseObject {
 
 open class FirebaseRepository() {
     private val serviceAccount = //getResourceAsStream("piclock-c9af5-firebase-adminsdk-bt8eu-7577a0e07b.json")
-        FileInputStream("piclock-c9af5-firebase-adminsdk-bt8eu-7577a0e07b.json")
+        FileInputStream("tests-cafb2-firebase-adminsdk-tyyjx-046e24b608.json")
 
     private val options = FirebaseOptions.builder()
         .setCredentials(GoogleCredentials.fromStream(serviceAccount))
-        .setDatabaseUrl("https://piclock-c9af5.firebaseio.com")
+        .setDatabaseUrl("https://tests-cafb2.firebaseio.com")
         .build();
 
     init {

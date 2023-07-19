@@ -6,10 +6,13 @@ import androidx.core.content.edit
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.firestore.ListenerRegistration
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import java.util.*
@@ -19,11 +22,8 @@ import javax.inject.Inject
 @SuppressLint("StaticFieldLeak") // as it's the application context, there is no leak using it in a viewModel
 class GateViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val _gateRepository: GateRepository? = null // Compose previous purpose
+    private val gateRepository: GateRepository // Compose previous purpose
 ) : ViewModel() {
-    private val gateRepository: GateRepository
-        get() = _gateRepository!!
-
     companion object {
         const val FAVORITE_SIDE = "FAVORITE_SIDE"
     }
@@ -60,20 +60,51 @@ class GateViewModel @Inject constructor(
     private val _favorite = MutableLiveData(GateSide.Left)
     val favorite: LiveData<GateSide>
         get() = _favorite
+    
+    private val listeners = mutableListOf<ListenerRegistration?>()
+    
+
+    private val _lightIsOn = MutableLiveData(false)
+    val lightIsOn: LiveData<Boolean>
+        get() = _lightIsOn
+
+    private val _lightTime = MutableLiveData(0L)
+    
+    val lightTime: LiveData<Long>
+        get() = _lightTime
 
     private var manualOpeningLeft = 0L
     private var manualOpeningRight = 0L
+    
 
     init {
         viewModelScope.launch {
 
-            _gateRepository?.listenStatus(GateSide.Left) { status -> _leftStatus.postValue(status) }
-            _gateRepository?.listenStatus(GateSide.Right) { status -> _rightStatus.postValue(status) }
+            gateRepository.listenStatus(GateSide.Left) { status -> _leftStatus.postValue(status) }
+            gateRepository.listenStatus(GateSide.Right) { status -> _rightStatus.postValue(status) }
 
-            _gateRepository?.listenProgress(GateSide.Left) { _leftProgress.postValue(it) }
-            _gateRepository?.listenProgress(GateSide.Right) { _rightProgress.postValue(it) }
+            gateRepository.listenProgress(GateSide.Left) { _leftProgress.postValue(it) }
+            gateRepository.listenProgress(GateSide.Right) { _rightProgress.postValue(it) }
 
-            _gateRepository?.listenTime { side, time ->
+            launch {
+                gateRepository.flowLightStatus().let {(l, flow) ->
+                    listeners.add(l)
+                    flow.collectLatest {
+                        _lightIsOn.postValue(it)
+                    }
+                }
+            }
+
+            launch {
+                gateRepository.flowLightTime().let {(l, flow) ->
+                    listeners.add(l)
+                    flow.collectLatest {
+                        _lightTime.postValue(it)
+                    }
+                }
+            }
+
+            gateRepository.listenTime { side, time ->
                 when (side) {
                     GateSide.Left -> _timeLeft.postValue(time)
                     GateSide.Right -> _timeRight.postValue(time)
@@ -86,6 +117,13 @@ class GateViewModel @Inject constructor(
                 GateSide.values().find { side -> side.id == it }?: GateSide.Left
             }
         }
+    }
+
+    override fun onCleared() {
+        listeners.forEach {
+            it?.remove()
+        }
+        super.onCleared()
     }
 
     fun openGate() {
@@ -150,21 +188,29 @@ class GateViewModel @Inject constructor(
         }
     }
 
+    private fun lightDuration(side: GateSide) = when(side) {
+        GateSide.Left -> timeLeft.value?: 0L
+        GateSide.Right -> timeRight.value?: 0L
+    } + (lightTime.value?:0L) * 1000L
+
     fun openGate(side: GateSide) {
         viewModelScope.launch {
             gateRepository.setStatus(side, GateStatus.OPENING)
+            gateRepository.openLightForDuration(lightDuration(side))
 
             val status = if (!side == GateSide.Right) _rightStatus.value
             else _leftStatus.value
 
             if (status != GateStatus.OPENED && status != GateStatus.CLOSED)
                 gateRepository.setStatus(!side, GateStatus.NOT_WORKING)
+
         }
     }
 
     fun closeGate(side: GateSide) {
         viewModelScope.launch {
             gateRepository.setStatus(side, GateStatus.CLOSING)
+            gateRepository.openLightForDuration(lightDuration(side))
 
             val status = if (!side == GateSide.Right) _rightStatus.value
             else _leftStatus.value
@@ -200,6 +246,19 @@ class GateViewModel @Inject constructor(
             gateRepository.setStatus(GateSide.Left, GateStatus.NOT_WORKING)
         }
     }
+
+    fun toggleLight(isOn: Boolean) {
+        viewModelScope.launch {
+            gateRepository.setLightStatus(isOn)
+        }
+    }
+
+    fun setLightTime(time: Long) {
+        viewModelScope.launch {
+            gateRepository.setLightTime(time)
+        }
+    }
+
 
     class SaveTimeAction(
         private val gateRepository: GateRepository,
