@@ -1,9 +1,7 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 plugins {
     id ("com.android.application")
     id ("kotlin-android")
-    id("kotlin-kapt")
+    id("com.google.devtools.ksp")
     id("de.mannodermaus.android-junit5")
     id("com.google.firebase.crashlytics")
     id("com.google.gms.google-services")
@@ -16,19 +14,23 @@ android {
     buildFeatures {
         // Enables Jetpack Compose for this module
         compose true
+        buildConfig true
     }
     defaultConfig {
         testInstrumentationRunnerArguments runnerBuilder: 'de.mannodermaus.junit5.AndroidJUnit5Builder'
         applicationId ("com.zelgius.gateApp")
         minSdkVersion (24)
         targetSdkVersion (34)
-        versionCode (7)
-        versionName = "2.2.0"
+        versionCode (8)
+        versionName = "2.3.0"
 
         //testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // 2) Connect JUnit 5 to the runner
         signingConfig signingConfigs.debug
+        buildConfigField("double", "LATITUDE", "50.13829924386458" )
+        buildConfigField("double", "LONGITUDE", "5.2771781296775035" )
+
     }
 
     buildTypes {
@@ -60,7 +62,7 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion "1.4.8"
+        kotlinCompilerExtensionVersion "1.5.8"
     }
     packagingOptions {
         resources {
@@ -75,14 +77,7 @@ android {
             // Configuration goes here!
         }
     }
-    buildToolsVersion = '30.0.3'
     namespace 'com.zelgius.gateApp'
-}
-// For Kotlin
-tasks.withType(KotlinCompile).configureEach {
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_1_8
-    }
 }
 
 sourceSets {
@@ -94,11 +89,11 @@ sourceSets {
 }
 dependencies {
 
-    implementation ("androidx.core:core-ktx:1.10.1")
+    implementation ("androidx.core:core-ktx:1.12.0")
     implementation ("androidx.appcompat:appcompat:1.6.1")
-    implementation ("androidx.activity:activity-ktx:1.7.2")
-    implementation ("androidx.fragment:fragment-ktx:1.6.0")
-    implementation ("com.google.android.material:material:1.9.0")
+    implementation ("androidx.activity:activity-ktx:1.8.2")
+    implementation ("androidx.fragment:fragment-ktx:1.6.2")
+    implementation ("com.google.android.material:material:1.11.0")
     androidTestImplementation ("androidx.test.ext:junit:1.1.5")
     androidTestImplementation ("androidx.test.espresso:espresso-core:3.5.1")
     androidTestRuntimeOnly("de.mannodermaus.junit5:android-test-runner:1.2.2")
@@ -121,17 +116,17 @@ dependencies {
 
 
     //HILT
-    implementation("com.google.dagger:hilt-android:2.44")
-    kapt("com.google.dagger:hilt-android-compiler:2.44")
-    implementation("androidx.hilt:hilt-navigation-compose:1.0.0")
+    implementation("com.google.dagger:hilt-android:2.48")
+    ksp("com.google.dagger:hilt-android-compiler:2.48")
+    implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
 
     //KTX
-    implementation ("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1")
-    implementation ("androidx.lifecycle:lifecycle-livedata-ktx:2.6.1")
+    implementation ("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
+    implementation ("androidx.lifecycle:lifecycle-livedata-ktx:2.7.0")
     
     
     //COMPOSE
-    def composeVersion = "1.4.3"
+    def composeVersion = "1.6.0"
     implementation ("androidx.compose.ui:ui:$composeVersion")
     // Tooling support (Previews, etc.)
     implementation( "androidx.compose.ui:ui-tooling:$composeVersion")
@@ -143,16 +138,16 @@ dependencies {
     implementation ("androidx.compose.material:material-icons-core:$composeVersion")
     implementation ("androidx.compose.material:material-icons-extended:$composeVersion")
     // Integration with activities
-    implementation ("androidx.activity:activity-compose:1.7.2")
+    implementation ("androidx.activity:activity-compose:1.8.2")
     // Integration with ViewModels
-    implementation ("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1")
+    implementation ("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
     implementation "androidx.compose.material:material-icons-extended:$composeVersion"
     implementation "androidx.compose.runtime:runtime-livedata:$composeVersion"
 
     //Firebase
-    implementation ("com.google.firebase:firebase-firestore-ktx:24.7.0")
-    implementation ("com.google.firebase:firebase-auth:22.1.0")
-    implementation (platform("com.google.firebase:firebase-bom:28.0.1"))
+    implementation ("com.google.firebase:firebase-firestore-ktx:24.10.1")
+    implementation ("com.google.firebase:firebase-auth:22.3.1")
+    implementation (platform("com.google.firebase:firebase-bom:32.7.1"))
     implementation ("com.google.firebase:firebase-crashlytics")
     implementation "androidx.core:core-ktx:+"
 

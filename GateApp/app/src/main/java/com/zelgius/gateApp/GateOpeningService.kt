@@ -13,13 +13,13 @@ import ca.rmen.sunrisesunset.SunriseSunset
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.last
-import kotlinx.coroutines.flow.single
-import java.util.concurrent.TimeUnit
+import java.util.Date
 import javax.inject.Inject
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 
 @AndroidEntryPoint
@@ -33,9 +33,6 @@ class GateOpeningService : Service() {
     companion object {
         var isRunning: Boolean =
             false // it's not very pretty, but it's an easy way to check if it is running. As there is only one instance of the service at once, it should be ok
-
-        const val LATITUDE = 50.13829924386458
-        const val LONGITUDE = 5.2771781296775035
 
         const val DIRECTION_EXTRA = "DIRECTION_EXTRA"
         const val NOTIFICATION_ID = 1
@@ -84,6 +81,36 @@ class GateOpeningService : Service() {
                 }
                 .build()
         }
+
+        private fun createNotification(
+            context: Context,
+            time: Duration,
+        ): Notification {
+            val notificationIntent = Intent(context, MainActivity::class.java)
+            val pendingIntent =
+                PendingIntent.getActivity(
+                    context,
+                    0,
+                    notificationIntent,
+                    PendingIntent.FLAG_IMMUTABLE
+                )
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                createNotificationChannel(context, "worker", context.getString(R.string.working))
+
+            val minutes = time.inWholeMinutes
+            val seconds = (time - minutes.minutes).inWholeSeconds
+
+            return NotificationCompat.Builder(context, "worker")
+                .setContentTitle(context.getString(R.string.light_is_on))
+                .setContentText(
+                    context.getString(R.string.light_is_on_remaining_time, minutes, seconds)
+                )
+                .setSmallIcon(R.drawable.ic_gate)
+                .setContentIntent(pendingIntent)
+                .build()
+        }
+
 
         @RequiresApi(Build.VERSION_CODES.O)
         private fun createNotificationChannel(
@@ -149,17 +176,30 @@ class GateOpeningService : Service() {
         val gates = if (direction == Direction.Open) favorite to !favorite
         else !favorite to favorite
 
-        if(!SunriseSunset.isDay(LATITUDE, LONGITUDE))
-            gateRepository.setLightStatus(true)
+        val turnOnLight = !SunriseSunset.isDay(BuildConfig.LATITUDE, BuildConfig.LONGITUDE)
+        if (turnOnLight) gateRepository.setLightStatus(true)
 
         moveSide(gates.first, direction, workingStatus, targetStatus)
         moveSide(gates.second, direction, workingStatus, targetStatus)
 
-        if(!SunriseSunset.isDay(LATITUDE, LONGITUDE)){
-            val (listener, timeFlow) = gateRepository.flowLightTime()
-            val time = timeFlow.last()
-            delay(time * 1000)
-            listener?.remove()
+        if (turnOnLight) {
+            val (timeListener, timeFlow) = gateRepository.flowLightTime()
+            val (statusListener, statusFlow) = gateRepository.flowLightStatus()
+
+            val time = timeFlow.first()
+
+            val statingTime = Date().time
+
+            while (Date().time - statingTime < time * 1000 && statusFlow.first()) {
+                notificationManager.notify(
+                    NOTIFICATION_ID,
+                    createNotification(this, (time * 1000 - (Date().time - statingTime)).milliseconds)
+                )
+                delay(1.seconds)
+            }
+
+            timeListener?.remove()
+            statusListener?.remove()
             gateRepository.setLightStatus(false)
         }
     }

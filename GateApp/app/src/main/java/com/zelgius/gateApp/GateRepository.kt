@@ -158,11 +158,7 @@ class GateRepository : FirebaseRepository() {
     }
 
     suspend fun openLightForDuration(duration: Long) {
-        if (/*!SunriseSunset.isDay(
-                GateOpeningService.LATITUDE,
-                GateOpeningService.LONGITUDE
-            )*/ true
-        ) {
+        if (!SunriseSunset.isDay(BuildConfig.LATITUDE, BuildConfig.LONGITUDE)) {
             job?.cancel()
             job = coroutineScope {
                 async {

@@ -44,4 +44,9 @@
     <string name="dismiss">Dismiss</string>
     <string name="ok">Ok</string>
     <string name="textfield_format_error">Invalid format</string>
+    <string name="light_is_on">Light is on</string>
+    <string name="light_is_on_remaining_time">Light will shut down in %02d:%02d</string>
+    <string name="no_foreground_notification">The notification progress will not be available</string>
+    <string name="update">Update</string>
+
 </resources>

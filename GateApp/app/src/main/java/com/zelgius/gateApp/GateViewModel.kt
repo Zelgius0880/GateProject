@@ -60,22 +60,22 @@ class GateViewModel @Inject constructor(
     private val _favorite = MutableLiveData(GateSide.Left)
     val favorite: LiveData<GateSide>
         get() = _favorite
-    
+
     private val listeners = mutableListOf<ListenerRegistration?>()
-    
+
 
     private val _lightIsOn = MutableLiveData(false)
     val lightIsOn: LiveData<Boolean>
         get() = _lightIsOn
 
     private val _lightTime = MutableLiveData(0L)
-    
+
     val lightTime: LiveData<Long>
         get() = _lightTime
 
     private var manualOpeningLeft = 0L
     private var manualOpeningRight = 0L
-    
+
 
     init {
         viewModelScope.launch {
@@ -87,7 +87,7 @@ class GateViewModel @Inject constructor(
             gateRepository.listenProgress(GateSide.Right) { _rightProgress.postValue(it) }
 
             launch {
-                gateRepository.flowLightStatus().let {(l, flow) ->
+                gateRepository.flowLightStatus().let { (l, flow) ->
                     listeners.add(l)
                     flow.collectLatest {
                         _lightIsOn.postValue(it)
@@ -96,7 +96,7 @@ class GateViewModel @Inject constructor(
             }
 
             launch {
-                gateRepository.flowLightTime().let {(l, flow) ->
+                gateRepository.flowLightTime().let { (l, flow) ->
                     listeners.add(l)
                     flow.collectLatest {
                         _lightTime.postValue(it)
@@ -114,7 +114,7 @@ class GateViewModel @Inject constructor(
             _favorite.value = sharedPreferences.getString(
                 FAVORITE_SIDE, null
             ).let {
-                GateSide.values().find { side -> side.id == it }?: GateSide.Left
+                GateSide.values().find { side -> side.id == it } ?: GateSide.Left
             }
         }
     }
@@ -188,10 +188,26 @@ class GateViewModel @Inject constructor(
         }
     }
 
-    private fun lightDuration(side: GateSide) = when(side) {
-        GateSide.Left -> timeLeft.value?: 0L
-        GateSide.Right -> timeRight.value?: 0L
-    } + (lightTime.value?:0L) * 1000L
+    fun showSnackBar(message: String, action: Pair<String, () -> Unit>? = null) {
+        viewModelScope.launch {
+            messageChannel.send(SnackbarMessage(message, action?.let { (text, action) ->
+                SnackbarMessage.Action(
+                    text,
+                    object : SnackbarAction {
+                        override suspend fun work() {
+                            action()
+                        }
+                    }
+                )
+            }
+            ))
+        }
+    }
+
+    private fun lightDuration(side: GateSide) = when (side) {
+        GateSide.Left -> timeLeft.value ?: 0L
+        GateSide.Right -> timeRight.value ?: 0L
+    } + (lightTime.value ?: 0L) * 1000L
 
     fun openGate(side: GateSide) {
         viewModelScope.launch {
@@ -220,7 +236,7 @@ class GateViewModel @Inject constructor(
         }
     }
 
-    fun setStatus(side: GateSide, status: GateStatus){
+    fun setStatus(side: GateSide, status: GateStatus) {
         viewModelScope.launch {
             gateRepository.setStatus(side, status)
             gateRepository.setCurrentStatus(side, status)
