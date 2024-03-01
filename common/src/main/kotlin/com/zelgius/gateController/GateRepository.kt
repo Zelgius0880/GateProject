@@ -1,6 +1,9 @@
 package com.zelgius.gateController
 
-class GateRepository : FirebaseRepository() {
+import java.io.FileInputStream
+import java.io.InputStream
+
+class GateRepository(serviceAccount: InputStream) : FirebaseRepository(serviceAccount) {
     suspend fun getProgress(side: GateSide): Int =
         getSnapshot("gate_${side.id}", "states").let {
             (it["progress"] as Long?)?.toInt()?: 0

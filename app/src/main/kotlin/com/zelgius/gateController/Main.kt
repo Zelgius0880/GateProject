@@ -7,7 +7,7 @@ import java.io.File
 fun main() {
     println(File("").absolutePath)
 
-    val controller = GateController()
+    val controller = GateControllerImpl()
     try {
         controller.run()
     } catch (e: Exception) {

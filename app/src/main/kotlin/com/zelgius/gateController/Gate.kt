@@ -4,26 +4,26 @@ import com.pi4j.context.Context
 import com.pi4j.io.gpio.digital.DigitalOutput
 import com.pi4j.io.gpio.digital.DigitalState
 
-class Gate(
+class GateImpl (
     private val context: Context,
     enableOpenPin: Int,
     enableClosePin: Int,
-    val side: GateSide
-) {
+    side: GateSide
+) : Gate (side){
     private val enableClose = buildPin("close", enableClosePin)
     private val enableOpen = buildPin("open", enableOpenPin)
 
-    fun stop() {
+    override fun stop() {
         enableOpen.low()
         enableClose.low()
     }
 
-    fun open() {
+    override fun open() {
         enableOpen.high()
         enableClose.low()
     }
 
-    fun close() {
+    override fun close() {
         enableOpen.low()
         enableClose.high()
     }

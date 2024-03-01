@@ -1,7 +1,8 @@
 package com.zelgius.gateApp
 
-import android.app.ActivityManager
 import android.service.quicksettings.TileService
+import com.zelgius.gateApp.service.Direction
+import com.zelgius.gateApp.service.GateOpeningService
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

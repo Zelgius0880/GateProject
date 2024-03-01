@@ -24,6 +24,11 @@ class GateRepository : FirebaseRepository() {
             it["status"] as String
         })
 
+    suspend fun getToken(): String =
+        getSnapshot("registration", "states").let {
+            it["token"] as String
+        }
+
 
     suspend fun setStatus(side: GateSide, status: GateStatus) {
         set("gate_${side.id}", "states", mapOf("status" to status))
@@ -45,6 +50,10 @@ class GateRepository : FirebaseRepository() {
         set("gate_light", "states", mapOf("time_after" to time))
     }
 
+    suspend fun setFavorite(side: GateSide) {
+        set("gate_light", "states", mapOf("favorite" to side))
+    }
+
     suspend fun listenStatus(side: GateSide, callback: (GateStatus) -> Unit) = listOf(
         listen("gate_${side.id}", "states") { documentSnapshot, firestoreException ->
             if (firestoreException != null) throw firestoreException
@@ -55,6 +64,24 @@ class GateRepository : FirebaseRepository() {
             }
         },
     )
+
+
+    suspend fun flowFavorite(): Pair<ListenerRegistration?, Flow<GateSide?>> {
+        var listener: ListenerRegistration? = null
+        val flow = callbackFlow {
+            listener = listen("gate_light", "states") { documentSnapshot, firestoreException ->
+                if (firestoreException != null) throw firestoreException
+                else documentSnapshot?.let { snapshot ->
+                    snapshot["favorite"]?.let {
+                        trySend(GateSide.valueOf(it.toString()))
+                    }
+                }
+            }
+
+            awaitClose { cancel() }
+        }
+        return listener to flow
+    }
 
     suspend fun flowStatus(side: GateSide): Pair<ListenerRegistration?, Flow<GateStatus?>> {
         var listener: ListenerRegistration? = null

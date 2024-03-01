@@ -1,10 +1,16 @@
 package com.zelgius.gate.debug
 
-//const val serialPort = "/dev/cu.usbmodem0006828704901"
+import java.io.File
 
 fun main() {
-    val serial = SerialIO.createSerial("/dev/serial0")
 
-    SerialIO(serial).start()
+    val controller = GateControllerImpl()
+    try {
+        controller.run()
+    } catch (e: Exception) {
+        e.printStackTrace()
+    } finally {
+        controller.shutdown()
+    }
 }
 

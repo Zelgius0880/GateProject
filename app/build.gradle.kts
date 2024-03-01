@@ -33,24 +33,17 @@ var raspberry = Remote(
 )
 
 val pi4jVersion = "2.1.1"
-val slf4jVersion = "1.7.36"
+
 dependencies {
     implementation(kotlin("stdlib"))
+    implementation(project(":common"))
+
 
     implementation("com.pi4j:pi4j-core:$pi4jVersion")
     implementation("com.pi4j:pi4j-plugin-raspberrypi:$pi4jVersion")
     implementation("com.pi4j:pi4j-plugin-pigpio:$pi4jVersion")
 
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
     testImplementation(kotlin("test-junit5"))
-    implementation("org.junit.jupiter:junit-jupiter:5.9.0")
-
-    //Firebase
-    implementation("com.google.firebase:firebase-admin:9.0.0")
-    implementation("org.apache.logging.log4j:log4j-slf4j-impl:2.18.0")
-
-    implementation("org.slf4j:slf4j-api:$slf4jVersion")
-    implementation("org.slf4j:slf4j-simple:$slf4jVersion")
 }
 
 

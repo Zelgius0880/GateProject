@@ -6,16 +6,20 @@ import androidx.core.content.edit
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.ListenerRegistration
+import com.zelgius.gateApp.service.Direction
+import com.zelgius.gateApp.service.GateOpeningService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
-import java.util.*
+import java.util.Date
 import javax.inject.Inject
 
 @HiltViewModel
@@ -104,21 +108,33 @@ class GateViewModel @Inject constructor(
                 }
             }
 
+            launch {
+                gateRepository.flowFavorite().let { (l, flow) ->
+                    listeners.add(l)
+
+                    flow.first().let {
+                        if(it == null) gateRepository.setFavorite(
+                            sharedPreferences.getString(
+                                FAVORITE_SIDE, null
+                            ).let {
+                                GateSide.entries.find { side -> side.id == it } ?: GateSide.Left
+                            }
+                        )
+                    }
+                    flow.filterNotNull().collectLatest {
+                        _favorite.postValue(it)
+                    }
+                }
+            }
+
             gateRepository.listenTime { side, time ->
                 when (side) {
                     GateSide.Left -> _timeLeft.postValue(time)
                     GateSide.Right -> _timeRight.postValue(time)
                 }
             }
-
-            _favorite.value = sharedPreferences.getString(
-                FAVORITE_SIDE, null
-            ).let {
-                GateSide.values().find { side -> side.id == it } ?: GateSide.Left
-            }
         }
     }
-
     override fun onCleared() {
         listeners.forEach {
             it?.remove()
@@ -140,10 +156,7 @@ class GateViewModel @Inject constructor(
 
     fun toggleFavorite(side: GateSide) {
         viewModelScope.launch {
-            sharedPreferences.edit {
-                putString(FAVORITE_SIDE, side.id)
-            }
-            _favorite.value = side
+            gateRepository.setFavorite(side)
         }
     }
 

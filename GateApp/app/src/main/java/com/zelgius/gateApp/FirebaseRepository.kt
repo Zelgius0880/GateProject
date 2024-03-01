@@ -51,7 +51,7 @@ open class FirebaseRepository(val anonymousAuth: Boolean = true) {
         if (anonymousAuth) {
             if (auth.currentUser == null) {
                 suspendCoroutine<FirebaseUser> { continuation ->
-                    auth.signInAnonymously()
+                    auth.signInWithEmailAndPassword(BuildConfig.EMAIL, BuildConfig.PASSWORD)
                         .addOnCompleteListener { task ->
                             if (task.isSuccessful) {
                                 continuation.resume(auth.currentUser!!)
